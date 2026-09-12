@@ -22,6 +22,7 @@ import android.os.IBinder;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
+import androidx.core.content.ContextCompat;
 
 /**
  * Low-overhead native metronome for screen-off playback.
@@ -95,11 +96,12 @@ public final class BackgroundMetronomeService extends Service {
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         createNotificationChannel();
         IntentFilter filter = new IntentFilter(ACTION_CONTROL);
-        if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(controlReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            registerReceiver(controlReceiver, filter);
-        }
+        ContextCompat.registerReceiver(
+                this,
+                controlReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+        );
     }
 
     @Override
