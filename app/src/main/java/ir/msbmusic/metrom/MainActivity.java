@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.net.ConnectivityManager;
@@ -52,7 +51,8 @@ import java.io.InputStream;
  * The visible product runs as a verified Trusted Web Activity. The Activity:
  *  - shows one branded Android splash, then a no-logo loading surface,
  *  - validates Digital Asset Links before exposing online web content,
- *  - allows offline-first TWA launch only after a prior successful trust check,
+ *  - uses the original verified web Studio whenever validated internet is available,
+ *  - routes offline startup to a local emergency native metronome instead of a browser error,
  *  - never intentionally falls back to a normal browser/custom-tab toolbar,
  *  - limits Android app-links to https://msbmusic.ir/metrom/,
  *  - provides the postMessage bridge for the native background metronome.
@@ -66,9 +66,6 @@ public final class MainActivity extends Activity {
             "https://" + HOST + "/metrom/login.php?next=studio.php"
     );
     private static final long TRUST_TIMEOUT_MS = 8000L;
-    private static final String STARTUP_PREFS = "metrom_startup_v1";
-    private static final String PREF_TRUST_ESTABLISHED = "trusted_twa_established";
-    private static final String PREF_TRUSTED_BROWSER_PACKAGE = "trusted_browser_package";
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -81,9 +78,6 @@ public final class MainActivity extends Activity {
     private boolean navigationFinished;
     private boolean messageChannelRequested;
     private boolean keepLaunchSplash = true;
-    private boolean offlineTrustedLaunch;
-    private boolean trustEstablishedBefore;
-    private String trustedBrowserPackage;
     private boolean twaLoadingSplashReady;
     private String browserPackage;
     private Uri launchUrl = DEFAULT_START_URL;
@@ -107,13 +101,6 @@ public final class MainActivity extends Activity {
                 mainHandler.removeCallbacks(trustTimeout);
                 handleAllUrlsValidated = result;
                 if (result) {
-                    trustEstablishedBefore = true;
-                    trustedBrowserPackage = browserPackage;
-                    getSharedPreferences(STARTUP_PREFS, MODE_PRIVATE)
-                            .edit()
-                            .putBoolean(PREF_TRUST_ESTABLISHED, true)
-                            .putString(PREF_TRUSTED_BROWSER_PACKAGE, browserPackage)
-                            .apply();
                     launchTwa();
                 } else {
                     showSecureLaunchError();
@@ -171,7 +158,6 @@ public final class MainActivity extends Activity {
             handleAllUrlsValidated = false;
             originValidated = false;
             navigationFinished = false;
-            offlineTrustedLaunch = false;
             twaLoadingSplashReady = false;
         }
     };
@@ -185,10 +171,14 @@ public final class MainActivity extends Activity {
         getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.metrom_background));
         getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.metrom_background));
 
-        SharedPreferences startupPrefs = getSharedPreferences(STARTUP_PREFS, MODE_PRIVATE);
-        trustEstablishedBefore = startupPrefs.getBoolean(PREF_TRUST_ESTABLISHED, false);
-        trustedBrowserPackage = startupPrefs.getString(PREF_TRUSTED_BROWSER_PACKAGE, null);
         launchUrl = sanitizeMetromUrl(getIntent() == null ? null : getIntent().getData());
+
+        // Online = the original verified web Studio. Offline = a tiny native emergency
+        // metronome. We do not ask the browser to render an offline web error surface.
+        if (!hasValidatedInternet()) {
+            openOfflineEmergency();
+            return;
+        }
 
         // First surface: Android 12+ branded splash. Second surface: a real animated
         // loader (no duplicate logo) while the verified browser/TWA is prepared.
@@ -207,7 +197,11 @@ public final class MainActivity extends Activity {
             twaLaunched = false;
             navigationFinished = false;
             messageChannelRequested = false;
-            if (session != null && (handleAllUrlsValidated || offlineTrustedLaunch)) launchTwa();
+            if (!hasValidatedInternet()) {
+                openOfflineEmergency();
+            } else if (session != null && handleAllUrlsValidated) {
+                launchTwa();
+            }
         }
     }
 
@@ -237,30 +231,11 @@ public final class MainActivity extends Activity {
             return;
         }
 
-        // Offline-first path is allowed only after this exact installation has
-        // successfully validated Digital Asset Links at least once. This mirrors
-        // Chrome's recommended TWA offline-first lifecycle and avoids any first-run
-        // browser/error surface that could expose the public URL.
         if (!hasValidatedInternet()) {
-            // Never hand an offline URL to a browser provider that was not the one
-            // previously verified online for this installation. If the provider has
-            // changed, remain in our native surface so a Custom Tab/address bar can
-            // never become the fallback UI.
-            if (!trustEstablishedBefore || trustedBrowserPackage == null
-                    || !trustedBrowserPackage.equals(browserPackage)) {
-                showFirstRunOfflineError();
-                return;
-            }
-            offlineTrustedLaunch = true;
-            handleAllUrlsValidated = false;
-            session.validateRelationship(
-                    CustomTabsService.RELATION_USE_AS_ORIGIN, ORIGIN, null
-            );
-            launchTwa();
+            openOfflineEmergency();
             return;
         }
 
-        offlineTrustedLaunch = false;
         boolean trustRequested = session.validateRelationship(
                 CustomTabsService.RELATION_HANDLE_ALL_URLS, ORIGIN, null
         );
@@ -373,7 +348,7 @@ public final class MainActivity extends Activity {
     }
 
     private void launchTwa() {
-        if (twaLaunched || session == null || (!handleAllUrlsValidated && !offlineTrustedLaunch)) return;
+        if (twaLaunched || session == null || !handleAllUrlsValidated) return;
         twaLaunched = true;
         mainHandler.removeCallbacks(trustTimeout);
         keepLaunchSplash = false;
@@ -394,11 +369,22 @@ public final class MainActivity extends Activity {
      * native Metrom surface and allow a retry instead of exposing an address bar.
      */
     private void showSecureLaunchError() {
+        if (!hasValidatedInternet()) {
+            openOfflineEmergency();
+            return;
+        }
         showLaunchError(R.string.secure_launch_title, R.string.secure_launch_body);
     }
 
-    private void showFirstRunOfflineError() {
-        showLaunchError(R.string.offline_first_run_title, R.string.offline_first_run_body);
+    private void openOfflineEmergency() {
+        mainHandler.removeCallbacks(trustTimeout);
+        keepLaunchSplash = false;
+        if (isFinishing() || isDestroyed()) return;
+        Intent offline = new Intent(this, OfflineMetronomeActivity.class)
+                .putExtra(OfflineMetronomeActivity.EXTRA_RETURN_URL, launchUrl.toString())
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(offline);
+        finish();
     }
 
     private void showLaunchError(int titleRes, int bodyRes) {
@@ -464,11 +450,7 @@ public final class MainActivity extends Activity {
         originValidated = false;
         navigationFinished = false;
         messageChannelRequested = false;
-        offlineTrustedLaunch = false;
         twaLoadingSplashReady = false;
-        SharedPreferences startupPrefs = getSharedPreferences(STARTUP_PREFS, MODE_PRIVATE);
-        trustEstablishedBefore = startupPrefs.getBoolean(PREF_TRUST_ESTABLISHED, false);
-        trustedBrowserPackage = startupPrefs.getString(PREF_TRUSTED_BROWSER_PACKAGE, null);
         session = null;
         client = null;
         browserPackage = null;

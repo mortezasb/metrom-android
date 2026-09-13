@@ -9,6 +9,21 @@
     <string name="secure_launch_body">مرورگر اندروید را به‌روز کنید و اتصال اینترنت را بررسی کنید، سپس دوباره تلاش کنید. Metrom در پنجره مرورگر تاییدنشده باز نمی‌شود.</string>
     <string name="secure_launch_retry">تلاش دوباره</string>
     <string name="loading_metrom">در حال آماده سازی متروم…</string>
-    <string name="offline_first_run_title">برای بار اول اینترنت لازم است</string>
-    <string name="offline_first_run_body">فقط یک بار به اینترنت وصل شوید تا ارتباط امن Metrom تایید و استودیو برای استفاده آفلاین روی دستگاه ذخیره شود. بعد از آن نسخه کش شده بدون اینترنت هم اجرا می شود.</string>
+
+    <string name="offline_emergency_title">مترونوم اضطراری</string>
+    <string name="offline_emergency_subtitle">اینترنت در دسترس نیست؛ اما ضرب نباید متوقف شود.</string>
+    <string name="offline_connection_badge">حالت آفلاین • مترونوم آماده است</string>
+    <string name="offline_connection_restored">اینترنت وصل شد • استودیو آماده است</string>
+    <string name="offline_tempo">سرعت</string>
+    <string name="offline_tap_tempo">Tap Tempo</string>
+    <string name="offline_time_signature">میزان</string>
+    <string name="offline_volume">حجم صدا</string>
+    <string name="offline_start_metronome">▶ شروع مترونوم</string>
+    <string name="offline_stop_metronome">■ توقف مترونوم</string>
+    <string name="offline_studio_title">Studio و تمرین‌ها</string>
+    <string name="offline_studio_body">این مترونوم کاملا روی گوشی کار می‌کند و به اینترنت نیاز ندارد. برای ورود به Studio، تمرین‌ها، پروژه‌ها و امکانات آنلاین، اینترنت را فعال کنید.</string>
+    <string name="offline_open_studio">ورود به Studio</string>
+    <string name="offline_check_connection">بررسی اینترنت و ورود به Studio</string>
+    <string name="offline_still_offline">هنوز اتصال اینترنت در دسترس نیست.</string>
+    <string name="offline_local_note">صدای مترونوم به صورت محلی تولید می‌شود و هیچ درخواست سروری ندارد.</string>
 </resources>

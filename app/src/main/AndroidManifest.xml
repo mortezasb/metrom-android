@@ -63,6 +63,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".OfflineMetronomeActivity"
+            android:exported="false"
+            android:screenOrientation="unspecified"
+            android:theme="@style/Theme.Metrom" />
+
         <!--
           User-gesture bridge used to start media playback legally on Android 12+.
           It is transparent, has no UI, starts the mediaPlayback FGS, then returns

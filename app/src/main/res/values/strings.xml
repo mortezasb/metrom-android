@@ -9,6 +9,21 @@
     <string name="secure_launch_body">Update your Android browser and check your internet connection, then try again. Metrom will not open in an unverified browser window.</string>
     <string name="secure_launch_retry">Try again</string>
     <string name="loading_metrom">Preparing Metrom…</string>
-    <string name="offline_first_run_title">One online start is required</string>
-    <string name="offline_first_run_body">Connect to the internet once so Metrom can verify the secure app link and save the Studio for offline use. After that, the cached Studio can start without a connection.</string>
+
+    <string name="offline_emergency_title">Emergency metronome</string>
+    <string name="offline_emergency_subtitle">No internet right now — but the beat can keep going.</string>
+    <string name="offline_connection_badge">Offline • Metronome ready</string>
+    <string name="offline_connection_restored">Internet restored • Studio ready</string>
+    <string name="offline_tempo">Tempo</string>
+    <string name="offline_tap_tempo">Tap Tempo</string>
+    <string name="offline_time_signature">Time signature</string>
+    <string name="offline_volume">Volume</string>
+    <string name="offline_start_metronome">▶ Start metronome</string>
+    <string name="offline_stop_metronome">■ Stop metronome</string>
+    <string name="offline_studio_title">Studio &amp; practice</string>
+    <string name="offline_studio_body">This metronome runs entirely on your phone without internet. Turn internet on to use Studio, practice tools, projects and online features.</string>
+    <string name="offline_open_studio">Open Studio</string>
+    <string name="offline_check_connection">Check internet &amp; open Studio</string>
+    <string name="offline_still_offline">Internet is still unavailable.</string>
+    <string name="offline_local_note">Metronome audio is generated locally with zero server requests.</string>
 </resources>

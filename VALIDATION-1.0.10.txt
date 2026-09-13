@@ -1,0 +1,19 @@
+Metrom Android 1.0.10 static validation
+
+PASS - AndroidManifest.xml XML parse
+PASS - values/strings.xml XML parse
+PASS - values-fa/strings.xml XML parse
+PASS - Persian/default string resource names are symmetric
+PASS - all Java R.string references resolve to declared resources
+PASS - Java brace/parenthesis structural checks
+PASS - javac parser produced no syntax-form errors (Android SDK types unavailable in local bare javac environment)
+PASS - offline startup routes to OfflineMetronomeActivity before Custom Tabs binding
+PASS - online startup retains TrustedWebActivityIntentBuilder path
+PASS - offline metronome starts existing BackgroundMetronomeService with ACTION_PLAY
+PASS - BackgroundMetronomeService uses local AudioTrack.MODE_STATIC PCM loop
+PASS - old offline-first-run web-cache message is removed from startup behavior
+PASS - TWA loading image remains R.raw.twa_loading_ring
+PASS - store defaults remain versionCode=1 / versionName=1.0.0
+
+CI note:
+Final Android lint/build should still be run by the included GitHub Actions workflow because this environment does not contain the Android 36 SDK + Gradle 9.6 toolchain.

@@ -55,6 +55,7 @@ public final class BackgroundMetronomeService extends Service {
     private AudioManager.OnAudioFocusChangeListener legacyFocusListener;
     private Thread buildThread;
     private boolean running;
+    private static volatile boolean processRunning;
     private boolean focusPaused;
     private int generation;
 
@@ -80,6 +81,11 @@ public final class BackgroundMetronomeService extends Service {
             }
         }
     };
+
+    /** True while the native audio service is actively producing a metronome in this app process. */
+    public static boolean isRunning() {
+        return processRunning;
+    }
 
     /** Send a control message to an already-running service without starting a new background service. */
     public static void sendControl(Context context, String action, @Nullable Bundle extras) {
@@ -127,6 +133,7 @@ public final class BackgroundMetronomeService extends Service {
             // Promote first, then request focus. This ordering is important on newer Android releases.
             startInForeground();
             running = true;
+            processRunning = true;
             if (!requestAudioFocus()) {
                 stopPlaybackAndSelf();
                 return START_NOT_STICKY;
@@ -356,6 +363,7 @@ public final class BackgroundMetronomeService extends Service {
             return;
         }
         running = false;
+        processRunning = false;
         focusPaused = false;
         generation++;
 
@@ -415,6 +423,7 @@ public final class BackgroundMetronomeService extends Service {
     public void onDestroy() {
         try { unregisterReceiver(controlReceiver); } catch (RuntimeException ignored) {}
         running = false;
+        processRunning = false;
         focusPaused = false;
         generation++;
         Thread thread = buildThread;
