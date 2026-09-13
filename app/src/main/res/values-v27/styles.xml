@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 27+ only: keep light navigation-bar icons disabled on Metrom's dark navigation bar. -->
+    <style name="Theme.Metrom" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:navigationBarColor">@color/metrom_background</item>
+        <item name="android:statusBarColor">@color/metrom_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:colorAccent">@color/metrom_pink</item>
+    </style>
+
+    <style name="Theme.Metrom.Transparent" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:colorAccent">@color/metrom_pink</item>
+    </style>
+
+    <style name="Theme.Metrom.Starting" parent="Theme.SplashScreen.IconBackground">
+        <item name="windowSplashScreenBackground">@color/metrom_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_metrom</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/metrom_icon_background</item>
+        <item name="postSplashScreenTheme">@style/Theme.Metrom</item>
+    </style>
+
+</resources>

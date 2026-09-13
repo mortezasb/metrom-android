@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.use_as_origin"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "ir.msbmusic.metrom",
+      "sha256_cert_fingerprints": [
+        "AA:16:46:81:E2:22:06:31:F1:02:A5:64:8A:35:F1:42:72:96:3F:86:14:31:67:3E:F0:0C:91:B7:60:74:EF:1D"
+      ]
+    }
+  }
+]
