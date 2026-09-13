@@ -1,0 +1,14 @@
+Metrom Android source revision 1.0.8 - Build Fix
+
+این اصلاح فقط برای خطای Build مربوط به OfflineMetronomeActivity است.
+
+علت:
+فایل قدیمی OfflineMetronomeActivity.java از یک نسخه میانی در Repository باقی مانده بود و به string resource هایی ارجاع می داد که دیگر در معماری Offline-First فعلی وجود ندارند. Gradle تمام فایل های Java موجود در مسیر source را کامپایل می کند، حتی اگر Activity در Manifest فعلی استفاده نشود.
+
+اصلاح:
+- OfflineMetronomeActivity.java به Compatibility Shim بسیار کوچک تبدیل شد.
+- هیچ مترونوم Native دوم یا UI آفلاین جدا ساخته نمی شود.
+- اگر این Activity قدیمی به هر دلیل فراخوانی شود، مستقیم به MainActivity اصلی منتقل می شود.
+- معماری TWA، کش Offline-First، BackgroundMetronomeService و سیاست عدم نمایش URL بدون تغییر مانده است.
+- هیچ Query، REST، AJAX، Polling یا دسترسی دیتابیس جدید اضافه نشده است.
+- نسخه فروشگاه همچنان versionCode=1 و versionName=1.0.0 است.

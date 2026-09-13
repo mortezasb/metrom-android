@@ -5,3 +5,8 @@ Static validation covers XML/JSON/YAML parsing, first-release versionCode/versio
 The public store release is still `versionCode=1` / `versionName=1.0.0`. A real signed Android build is intentionally performed by the repository's `Build Signed Release` GitHub Action because the private keystore remains only in GitHub Secrets and must never be bundled into this source archive.
 
 - Offline TWA launch is allowed only after prior trust and only with the same verified browser provider, preventing an unverified offline browser fallback.
+
+## 1.0.8 build-fix
+- Added a harmless `OfflineMetronomeActivity` compatibility shim so stale repositories cannot fail Java compilation on removed offline UI string resources.
+- The shim creates no alternate metronome UI and immediately forwards to the canonical `MainActivity`.
+- Public store defaults remain `versionCode 1` / `versionName 1.0.0`.
