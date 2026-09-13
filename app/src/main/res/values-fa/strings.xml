@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">Metrom</string>
-    <string name="playback_channel_name">پخش مترونوم</string>
-    <string name="playback_channel_description">مترونوم متروم را هنگام خاموش بودن صفحه فعال نگه می‌دارد.</string>
-    <string name="notification_title">Metrom</string>
-    <string name="notification_stop">توقف</string>
-</resources>
