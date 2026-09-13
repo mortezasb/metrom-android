@@ -1,6 +1,5 @@
 package ir.msbmusic.metrom;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,6 +22,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 
@@ -34,7 +35,7 @@ import java.util.List;
  * Fully native, zero-network metronome fallback.
  * It uses the same low-overhead BackgroundMetronomeService as the online studio.
  */
-public final class OfflineMetronomeActivity extends Activity {
+public final class OfflineMetronomeActivity extends ComponentActivity {
     private static final int MIN_BPM = 35;
     private static final int MAX_BPM = 240;
     private static final long EXIT_WINDOW_MS = 1900L;
@@ -50,7 +51,6 @@ public final class OfflineMetronomeActivity extends Activity {
     private Button playButton;
     private Button meterButton;
     private SeekBar bpmSeek;
-    private Object backCallback;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -63,9 +63,16 @@ public final class OfflineMetronomeActivity extends Activity {
         signature = safeSignature(prefs.getString("signature", "4/4"));
 
         setContentView(buildUi());
-        if (Build.VERSION.SDK_INT >= 33) {
-            backCallback = Api33Back.register(this, this::handleBack);
-        }
+
+        // AndroidX bridges classic Back and Android 13+ / Android 16 predictive Back
+        // through one lifecycle-aware callback, so the same double-back-to-exit
+        // behavior works consistently from API 23 through API 36+.
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                handleBack();
+            }
+        });
     }
 
     private View buildUi() {
@@ -266,15 +273,6 @@ public final class OfflineMetronomeActivity extends Activity {
         Toast.makeText(this, R.string.press_back_again_to_exit, Toast.LENGTH_SHORT).show();
     }
 
-    @Override
-    public void onBackPressed() {
-        if (Build.VERSION.SDK_INT >= 33) {
-            // Predictive back is handled by OnBackInvokedDispatcher above.
-            return;
-        }
-        handleBack();
-    }
-
     private void persistAndStopUi() {
         persist();
     }
@@ -283,15 +281,6 @@ public final class OfflineMetronomeActivity extends Activity {
     protected void onPause() {
         persistAndStopUi();
         super.onPause();
-    }
-
-    @Override
-    protected void onDestroy() {
-        if (Build.VERSION.SDK_INT >= 33 && backCallback != null) {
-            Api33Back.unregister(this, backCallback);
-            backCallback = null;
-        }
-        super.onDestroy();
     }
 
     private int clamp(int value) { return Math.max(MIN_BPM, Math.min(MAX_BPM, value)); }
@@ -346,21 +335,5 @@ public final class OfflineMetronomeActivity extends Activity {
     private int dpWrap() { return ViewGroup.LayoutParams.WRAP_CONTENT; }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
 
-    @android.annotation.TargetApi(33)
-    private static final class Api33Back {
-        static Object register(Activity activity, Runnable action) {
-            android.window.OnBackInvokedCallback callback = action::run;
-            activity.getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
-                    android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback
-            );
-            return callback;
-        }
-
-        static void unregister(Activity activity, Object callback) {
-            activity.getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
-                    (android.window.OnBackInvokedCallback) callback
-            );
-        }
-    }
 
 }
