@@ -4,7 +4,7 @@
 2. App name: `Metrom`
 3. Target API: 36
 4. نسخه Release را با AAB ارسال کنید.
-5. Privacy Policy می‌تواند صفحه عمومی Metrom باشد: `https://msbmusic.ir/Metrom/privacy.php?lang=en`
+5. Privacy Policy می‌تواند صفحه عمومی Metrom باشد: `https://msbmusic.ir/metrom/privacy.php?lang=en`
 6. بخش Data safety را مطابق داده‌هایی که واقعا در Login، پروژه‌ها، پرداخت و Analytics خودتان جمع‌آوری/پردازش می‌کنید تکمیل کنید؛ چیزی را حدس نزنید.
 7. چون برنامه برای ادامه مترونوم با صفحه خاموش از `mediaPlayback` Foreground Service استفاده می‌کند، Declaration مربوط به Foreground Service را در Play Console کامل کنید و توضیح/ویدیوی موردنیاز را بر اساس رفتار واقعی برنامه ارائه دهید.
 8. SHA-256 App Signing Certificate گوگل پلی را بعد از فعال شدن Play App Signing در `assetlinks.json` سایت اضافه کنید.
@@ -22,4 +22,4 @@
 - ذخیره و Sync پروژه
 - Export WAV/MP3
 - پرداخت و بازگشت از درگاه
-- Deep Link فقط داخل `/Metrom/`
+- Deep Link فقط داخل `/metrom/`

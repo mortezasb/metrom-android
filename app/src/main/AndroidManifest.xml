@@ -40,7 +40,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Intentionally limited to /Metrom/ so other apps on msbmusic.ir do not collide. -->
+            <!-- Intentionally limited to /metrom/ so other apps on msbmusic.ir do not collide. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -48,7 +48,7 @@
                 <data
                     android:scheme="https"
                     android:host="msbmusic.ir"
-                    android:path="/Metrom" />
+                    android:path="/metrom" />
             </intent-filter>
 
             <intent-filter android:autoVerify="true">
@@ -58,7 +58,7 @@
                 <data
                     android:scheme="https"
                     android:host="msbmusic.ir"
-                    android:pathPrefix="/Metrom/" />
+                    android:pathPrefix="/metrom/" />
             </intent-filter>
         </activity>
 

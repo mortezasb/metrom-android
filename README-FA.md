@@ -1,41 +1,20 @@
-# Metrom Android — سورس نهایی Release 1.0.4
+# Metrom Android 1.0.5 — نسخه نهایی انتشار
 
-این مخزن پوسته اندروید رسمی **Metrom** برای مسیر قطعی:
+- دامنه: `msbmusic.ir`
+- Scope اپ: `https://msbmusic.ir/metrom/`
+- صفحه شروع اپ: `https://msbmusic.ir/metrom/login.php?next=studio.php`
+- پکیج: `ir.msbmusic.metrom`
+- لانچر و Splash از همان فایل `icon-512.png` سایت ساخته شده‌اند.
+- TWA بعد از Digital Asset Links معتبر، بدون نوار مرورگر و بدون نمایش URL اجرا می‌شود.
+- Signed Release با چهار Secret گیت‌هاب ساخته می‌شود.
+- خطای Signing نسخه 1.0.4 ناشی از هم‌نام بودن متغیر Groovy `keyPassword` با property DSL در 1.0.5 رفع شده است.
 
-`https://msbmusic.ir/Metrom/`
+## انتشار
+1. فایل سایت 5.5.5 را روی `/metrom/` Direct Overwrite کنید.
+2. `assetlinks.json` مشترک MSB + Metrom باید در `https://msbmusic.ir/.well-known/assetlinks.json` باقی بماند.
+3. سورس 1.0.5 را روی GitHub جایگزین کنید.
+4. Android CI را اجرا کنید.
+5. Build Signed Release را با `version_code=1` و `version_name=1.0.0` اجرا کنید.
+6. APK برای مایکت/نصب مستقیم و AAB برای Google Play استفاده می‌شود.
 
-است.
-
-## ویژگی‌های نسخه نهایی
-
-- نام برنامه: **Metrom**
-- Package: `ir.msbmusic.metrom`
-- Android 6+ (`minSdk 23`)
-- Target Android API 36
-- TWA با App Link محدود به `/Metrom` و `/Metrom/`
-- Splash استاندارد Android با `androidx.core:core-splashscreen:1.2.0`
-- همان هویت بصری و آیکون Metrom
-- موتور Native مترونوم برای ادامه پخش در پس‌زمینه/صفحه خاموش
-- بدون Polling، WorkManager، Location، Camera یا Microphone
-- Signed APK برای انتشار مستقیم/مایکت و AAB برای Google Play
-- GitHub Actions برای Debug و Signed Release
-- Asset Links با SHA-256 کلید Release فعلی آماده شده است
-
-## قبل از Release
-
-فایل سایت **Metrom Studio Beat 5.5.4** را روی `/Metrom/` Direct Overwrite کنید.
-فایل مشترک `https://msbmusic.ir/.well-known/assetlinks.json` باید شامل package
-`ir.msbmusic.metrom` و SHA زیر باشد:
-
-`AA:16:46:81:E2:22:06:31:F1:02:A5:64:8A:35:F1:42:72:96:3F:86:14:31:67:3E:F0:0C:91:B7:60:74:EF:1D`
-
-## GitHub Secrets
-
-- `METROM_KEYSTORE_BASE64`
-- `METROM_KEYSTORE_PASSWORD`
-- `METROM_KEY_ALIAS` = `metrom`
-- `METROM_KEY_PASSWORD`
-
-سپس از **Actions → Build Signed Release** نسخه Release را بسازید.
-
-برای مایکت، فایل Signed APK خروجی Workflow مناسب انتشار است.
+نکته: Debug APK با گواهی Debug امضا می‌شود و چون SHA آن در assetlinks تولید نیست، ممکن است نوار مرورگر نشان دهد. معیار تست Full-screen، Signed Release است.

@@ -1,13 +1,9 @@
-# Metrom Android 1.0.4
+# Metrom Android 1.0.5
 
-Production Android shell for **Metrom** at `https://msbmusic.ir/Metrom/`.
+Production TWA shell for `https://msbmusic.ir/metrom/`.
 
+- Default entry: `https://msbmusic.ir/metrom/login.php?next=studio.php`
 - Package: `ir.msbmusic.metrom`
-- minSdk 23, targetSdk 36
-- Trusted Web Activity scoped to `/Metrom`
-- AndroidX SplashScreen 1.2.0
-- Native low-overhead background metronome
-- GitHub Actions for debug APK and signed APK/AAB
-- Release Digital Asset Links fingerprint included in `assetlinks/`
-
-See `README-FA.md` and `docs/` for release steps.
+- Exact website icon used for launcher and AndroidX SplashScreen.
+- Verified TWA runs without browser chrome when the release certificate is present in `/.well-known/assetlinks.json`.
+- GitHub Actions builds debug APK, signed APK and signed AAB.

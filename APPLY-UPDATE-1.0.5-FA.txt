@@ -1,0 +1,16 @@
+Metrom Android 1.0.5
+
+این ZIP را با حفظ مسیر پوشه ها روی Repository فعلی metrom-android جایگزین کنید و Commit کنید.
+
+تغییرات حیاتی:
+- رفع خطای Build Signed Release در app/build.gradle
+- مسیر واقعی /metrom/ با حروف کوچک
+- شروع برنامه از /metrom/login.php?next=studio.php
+- Splash و Launcher بر پایه همان icon-512.png سایت
+- Workflow امضای Release دارای preflight برای keystore است
+
+بعد از Commit:
+1) Android CI را اجرا کنید.
+2) Build Signed Release را اجرا کنید.
+3) version_code=1 و version_name=1.0.0 برای اولین انتشار.
+4) برای تست Full-screen TWA از APK امضاشده استفاده کنید؛ Debug certificate در assetlinks تولید نیست.

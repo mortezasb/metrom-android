@@ -23,10 +23,9 @@
         <item name="android:colorAccent">@color/metrom_pink</item>
     </style>
 
-    <style name="Theme.Metrom.Starting" parent="Theme.SplashScreen.IconBackground">
+    <style name="Theme.Metrom.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/metrom_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_metrom</item>
-        <item name="windowSplashScreenIconBackgroundColor">@color/metrom_icon_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/metrom_site_icon</item>
         <item name="postSplashScreenTheme">@style/Theme.Metrom</item>
     </style>
 

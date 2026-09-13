@@ -1,0 +1,10 @@
+Metrom Android 1.0.5 static validation
+- Android XML: 17 files PASS
+- assetlinks JSON templates: PASS
+- Package: ir.msbmusic.metrom
+- Host: msbmusic.ir
+- App Link scope: /metrom and /metrom/
+- Default TWA entry: https://msbmusic.ir/metrom/login.php?next=studio.php
+- Release signing DSL collision fixed: keyPassword = releaseKeyPassword
+- Exact website icon source SHA-256: ba3a36f5fa76a75c11a62e6ddbff9f3f0491e537a978fd54e034b32195ca742b
+- Android CI 1.0.4 base was previously confirmed by user; 1.0.5 signed release must be run once in GitHub Actions.

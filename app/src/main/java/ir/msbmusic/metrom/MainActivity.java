@@ -28,7 +28,7 @@ import org.json.JSONObject;
  * The visible product stays in the TWA. This Activity only:
  *  - binds/warmups the user's Custom Tabs provider,
  *  - verifies msbmusic.ir with Digital Asset Links,
- *  - launches only URLs under /Metrom/,
+ *  - launches only URLs under /metrom/,
  *  - provides the postMessage bridge used by the native background metronome.
  *
  * It deliberately does not poll the website or prefetch studio.php.
@@ -36,9 +36,9 @@ import org.json.JSONObject;
 public final class MainActivity extends Activity {
     private static final String TAG = "MetromTWA";
     private static final String HOST = "msbmusic.ir";
-    private static final String PATH_PREFIX = "/Metrom/";
+    private static final String PATH_PREFIX = "/metrom/";
     private static final Uri ORIGIN = Uri.parse("https://" + HOST);
-    private static final Uri DEFAULT_START_URL = Uri.parse("https://" + HOST + "/Metrom/studio.php?source=twa");
+    private static final Uri DEFAULT_START_URL = Uri.parse("https://" + HOST + "/metrom/login.php?next=studio.php");
 
     private CustomTabsClient client;
     private CustomTabsSession session;
@@ -133,7 +133,7 @@ public final class MainActivity extends Activity {
         boolean safe = "https".equalsIgnoreCase(candidate.getScheme())
                 && HOST.equalsIgnoreCase(candidate.getHost())
                 && candidatePath != null
-                && ("/Metrom".equals(candidatePath) || candidatePath.startsWith(PATH_PREFIX));
+                && ("/metrom".equals(candidatePath) || candidatePath.startsWith(PATH_PREFIX));
         return safe ? candidate : DEFAULT_START_URL;
     }
 
