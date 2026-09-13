@@ -1,0 +1,20 @@
+Metrom Android 1.0.11 validation
+
+PASS - Web product URL and Verified TWA route unchanged
+PASS - Offline activity remains native and has no network/database/API call
+PASS - Background metronome uses AudioTrack.MODE_STREAM
+PASS - Audio usage routes through USAGE_MEDIA / CONTENT_TYPE_MUSIC
+PASS - Local PCM click is generated on-device
+PASS - No WorkManager, timer polling, REST, AJAX or DB access added to offline audio
+PASS - Default Android strings are Persian
+PASS - Locale config exposes Persian only; default resources are Persian
+PASS - BPM and time-signature digits are rendered Persian in offline UI
+PASS - Media-volume-zero warning added
+PASS - Audio-start failure feedback added
+PASS - Native black loading surface is no longer used at app startup
+PASS - TWA secondary loading splash is no longer used
+PASS - MainActivity finishes when TWA returns to it after user exit
+PASS - Android XML files parse successfully
+PASS - versionCode default remains 1
+PASS - versionName default remains 1.0.0
+PASS - Web 5.5.7 unchanged

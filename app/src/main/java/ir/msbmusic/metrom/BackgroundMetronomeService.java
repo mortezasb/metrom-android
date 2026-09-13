@@ -18,6 +18,7 @@ import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.SystemClock;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -25,11 +26,12 @@ import androidx.core.app.ServiceCompat;
 import androidx.core.content.ContextCompat;
 
 /**
- * Low-overhead native metronome for screen-off playback.
+ * Low-overhead local metronome used by both the verified web Studio bridge and
+ * the emergency offline screen.
  *
- * A single PCM bar is generated only when tempo/meter/volume changes and is
- * looped by AudioTrack.MODE_STATIC. There is no timer polling, wake lock,
- * WorkManager job or network request in this service.
+ * Audio is streamed directly to AudioTrack from a single foreground-service
+ * thread. Blocking AudioTrack writes pace the beat, so there is no polling,
+ * alarm, WorkManager job, network request or database access.
  */
 public final class BackgroundMetronomeService extends Service {
     public static final String ACTION_PLAY = "ir.msbmusic.metrom.action.PLAY";
@@ -46,24 +48,24 @@ public final class BackgroundMetronomeService extends Service {
     private static final String CHANNEL_ID = "metrom_metronome_playback";
     private static final int NOTIFICATION_ID = 2401;
     private static final int SAMPLE_RATE = 48_000;
-    private static final int CLICK_MS = 52;
+    private static final int CLICK_MS = 62;
 
     private final Object audioLock = new Object();
-    private AudioTrack audioTrack;
+    private volatile AudioTrack audioTrack;
+    private volatile boolean running;
+    private static volatile boolean processRunning;
+    private volatile boolean focusPaused;
+    private Thread audioThread;
+
     private AudioManager audioManager;
     private AudioFocusRequest focusRequest;
     private AudioManager.OnAudioFocusChangeListener legacyFocusListener;
-    private Thread buildThread;
-    private boolean running;
-    private static volatile boolean processRunning;
-    private boolean focusPaused;
-    private int generation;
 
-    private int bpm = 90;
-    private int beatsPerBar = 4;
-    private String timeSignature = "4/4";
-    private int volumePercent = 80;
-    private long requestedStartAtEpochMs;
+    private volatile int bpm = 90;
+    private volatile int beatsPerBar = 4;
+    private volatile String timeSignature = "4/4";
+    private volatile int volumePercent = 80;
+    private volatile long requestedStartAtEpochMs;
 
     private final BroadcastReceiver controlReceiver = new BroadcastReceiver() {
         @Override
@@ -75,19 +77,17 @@ public final class BackgroundMetronomeService extends Service {
                 return;
             }
             if ((ACTION_UPDATE.equals(control) || ACTION_PLAY.equals(control)) && running) {
-                boolean changed = readConfiguration(intent);
+                readConfiguration(intent);
                 updateNotification();
-                if (changed) rebuildLoop(false);
             }
         }
     };
 
-    /** True while the native audio service is actively producing a metronome in this app process. */
     public static boolean isRunning() {
         return processRunning;
     }
 
-    /** Send a control message to an already-running service without starting a new background service. */
+    /** Send a control message to the running service without starting another service instance. */
     public static void sendControl(Context context, String action, @Nullable Bundle extras) {
         Intent control = new Intent(ACTION_CONTROL)
                 .setPackage(context.getPackageName())
@@ -101,11 +101,10 @@ public final class BackgroundMetronomeService extends Service {
         super.onCreate();
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
         createNotificationChannel();
-        IntentFilter filter = new IntentFilter(ACTION_CONTROL);
         ContextCompat.registerReceiver(
                 this,
                 controlReceiver,
-                filter,
+                new IntentFilter(ACTION_CONTROL),
                 ContextCompat.RECEIVER_NOT_EXPORTED
         );
     }
@@ -114,59 +113,53 @@ public final class BackgroundMetronomeService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) return START_NOT_STICKY;
         String action = intent.getAction();
+
         if (ACTION_STOP.equals(action)) {
             stopPlaybackAndSelf();
             return START_NOT_STICKY;
         }
+
         if (ACTION_UPDATE.equals(action)) {
             if (running) {
-                boolean changed = readConfiguration(intent);
+                readConfiguration(intent);
                 updateNotification();
-                if (changed) rebuildLoop(false);
             }
             return START_NOT_STICKY;
         }
+
         if (!ACTION_PLAY.equals(action)) return START_NOT_STICKY;
 
-        boolean changed = readConfiguration(intent);
+        readConfiguration(intent);
         if (!running) {
-            // Promote first, then request focus. This ordering is important on newer Android releases.
             startInForeground();
             running = true;
             processRunning = true;
             if (!requestAudioFocus()) {
+                // Some OEMs temporarily deny focus even though media playback is otherwise
+                // available. Do not leave the UI in a fake "playing" state.
                 stopPlaybackAndSelf();
                 return START_NOT_STICKY;
             }
-            rebuildLoop(true);
+            startAudioThread();
         } else {
             updateNotification();
-            if (changed) rebuildLoop(true);
         }
         return START_NOT_STICKY;
     }
 
-    private boolean readConfiguration(Intent intent) {
-        int oldBpm = bpm;
-        int oldBeats = beatsPerBar;
-        int oldVolume = volumePercent;
-        String oldSignature = timeSignature;
-
+    private void readConfiguration(Intent intent) {
         bpm = clamp(intent.getIntExtra(EXTRA_BPM, bpm), 35, 240);
         volumePercent = clamp(intent.getIntExtra(EXTRA_VOLUME, volumePercent), 0, 100);
         requestedStartAtEpochMs = intent.getLongExtra(EXTRA_START_AT_EPOCH_MS, 0L);
-        String incomingSignature = intent.getStringExtra(EXTRA_TIME_SIGNATURE);
-        timeSignature = safeSignature(incomingSignature);
+        timeSignature = safeSignature(intent.getStringExtra(EXTRA_TIME_SIGNATURE));
         beatsPerBar = parseBeats(timeSignature);
-        return oldBpm != bpm || oldBeats != beatsPerBar || oldVolume != volumePercent || !oldSignature.equals(timeSignature);
     }
 
     private void startInForeground() {
-        Notification notification = buildNotification();
         int type = Build.VERSION.SDK_INT >= 29
                 ? ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
                 : 0;
-        ServiceCompat.startForeground(this, NOTIFICATION_ID, notification, type);
+        ServiceCompat.startForeground(this, NOTIFICATION_ID, buildNotification(), type);
     }
 
     private Notification buildNotification() {
@@ -182,7 +175,7 @@ public final class BackgroundMetronomeService extends Service {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.drawable.ic_stat_metronome)
                 .setContentTitle(getString(R.string.notification_title))
-                .setContentText(bpm + " BPM • " + timeSignature)
+                .setContentText(toPersianDigits(String.valueOf(bpm)) + " ضرب در دقیقه • " + toPersianDigits(timeSignature))
                 .setContentIntent(openPending)
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
@@ -197,7 +190,7 @@ public final class BackgroundMetronomeService extends Service {
     private void updateNotification() {
         if (!running) return;
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.notify(NOTIFICATION_ID, buildNotification());
+        if (manager != null) manager.notify(NOTIFICATION_ID, buildNotification());
     }
 
     private void createNotificationChannel() {
@@ -210,30 +203,24 @@ public final class BackgroundMetronomeService extends Service {
         channel.setSound(null, null);
         channel.enableVibration(false);
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        manager.createNotificationChannel(channel);
+        if (manager != null) manager.createNotificationChannel(channel);
     }
 
-    /** Generate one bar off the main thread and atomically swap the static AudioTrack loop. */
-    private void rebuildLoop(boolean honorRequestedStart) {
-        final int localGeneration = ++generation;
-        final int localBpm = bpm;
-        final int localBeats = beatsPerBar;
-        final int localVolume = volumePercent;
-        final long localStartAt = honorRequestedStart ? requestedStartAtEpochMs : 0L;
-
-        Thread previous = buildThread;
+    /**
+     * Reliable streaming audio loop. Each blocking write contains exactly one beat,
+     * including its click and following silence. The audio hardware therefore clocks
+     * the metronome instead of a Java timer.
+     */
+    private void startAudioThread() {
+        Thread previous = audioThread;
         if (previous != null) previous.interrupt();
 
-        buildThread = new Thread(() -> {
-            AudioTrack candidate = null;
+        audioThread = new Thread(() -> {
+            AudioTrack track = null;
             try {
-                short[] bar = createBar(localBpm, localBeats, localVolume);
-                if (!running || localGeneration != generation || Thread.currentThread().isInterrupted()) return;
-
-                int bufferBytes = bar.length * 2;
                 AudioAttributes attributes = new AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_MEDIA)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build();
                 AudioFormat format = new AudioFormat.Builder()
                         .setSampleRate(SAMPLE_RATE)
@@ -241,94 +228,130 @@ public final class BackgroundMetronomeService extends Service {
                         .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
                         .build();
 
-                candidate = new AudioTrack(
+                int minBytes = AudioTrack.getMinBufferSize(
+                        SAMPLE_RATE,
+                        AudioFormat.CHANNEL_OUT_MONO,
+                        AudioFormat.ENCODING_PCM_16BIT);
+                if (minBytes <= 0) minBytes = SAMPLE_RATE / 5 * 2;
+                int bufferBytes = Math.max(minBytes * 2, SAMPLE_RATE / 4 * 2);
+
+                track = new AudioTrack(
                         attributes,
                         format,
                         bufferBytes,
-                        AudioTrack.MODE_STATIC,
+                        AudioTrack.MODE_STREAM,
                         AudioManager.AUDIO_SESSION_ID_GENERATE);
-                if (candidate.getState() != AudioTrack.STATE_INITIALIZED) return;
-                int written = candidate.write(bar, 0, bar.length, AudioTrack.WRITE_BLOCKING);
-                if (written != bar.length) return;
-                candidate.setLoopPoints(0, bar.length, -1);
-
-                long delayMs = localStartAt > 0 ? localStartAt - System.currentTimeMillis() : 0L;
-                if (delayMs > 0 && delayMs < 2_000L) Thread.sleep(delayMs);
-                if (!running || localGeneration != generation || Thread.currentThread().isInterrupted()) return;
-
-                AudioTrack old;
-                synchronized (audioLock) {
-                    old = audioTrack;
-                    audioTrack = candidate;
-                    candidate = null;
-                    audioTrack.play();
-                    focusPaused = false;
+                if (track.getState() != AudioTrack.STATE_INITIALIZED) {
+                    throw new IllegalStateException("AudioTrack initialization failed");
                 }
-                releaseTrack(old);
-            } catch (InterruptedException ignored) {
-                Thread.currentThread().interrupt();
+
+                synchronized (audioLock) {
+                    audioTrack = track;
+                }
+
+                long startAt = requestedStartAtEpochMs;
+                long delayMs = startAt > 0L ? startAt - System.currentTimeMillis() : 0L;
+                if (delayMs > 0L && delayMs < 2000L) SystemClock.sleep(delayMs);
+                if (!running) return;
+
+                track.setVolume(1.0f);
+                track.play();
+                int beatIndex = 0;
+
+                while (running && !Thread.currentThread().isInterrupted()) {
+                    while (focusPaused && running && !Thread.currentThread().isInterrupted()) {
+                        SystemClock.sleep(20L);
+                    }
+                    if (!running) break;
+
+                    int localBpm = bpm;
+                    int localBeats = Math.max(1, beatsPerBar);
+                    int localVolume = volumePercent;
+                    if (beatIndex >= localBeats) beatIndex = 0;
+
+                    short[] beat = createBeat(localBpm, beatIndex == 0, localVolume);
+                    int offset = 0;
+                    while (running && offset < beat.length) {
+                        int written = track.write(
+                                beat,
+                                offset,
+                                beat.length - offset,
+                                AudioTrack.WRITE_BLOCKING);
+                        if (written <= 0) throw new IllegalStateException("AudioTrack write failed: " + written);
+                        offset += written;
+                    }
+                    beatIndex = (beatIndex + 1) % localBeats;
+                }
             } catch (RuntimeException ignored) {
-                if (localGeneration == generation) stopPlaybackAndSelf();
+                running = false;
+                processRunning = false;
             } finally {
-                releaseTrack(candidate);
+                synchronized (audioLock) {
+                    if (audioTrack == track) audioTrack = null;
+                }
+                releaseTrack(track);
+                if (!running) {
+                    abandonAudioFocus();
+                    stopForegroundCompat();
+                    stopSelf();
+                }
             }
-        }, "MetromLoopBuilder");
-        buildThread.setPriority(Thread.NORM_PRIORITY + 1);
-        buildThread.start();
+        }, "MetromAudioStream");
+        audioThread.setPriority(Thread.MAX_PRIORITY);
+        audioThread.start();
     }
 
-    private static short[] createBar(int bpm, int beats, int volumePercent) {
-        double framesPerBeat = SAMPLE_RATE * 60.0 / Math.max(35, bpm);
-        int frames = Math.max(1, (int) Math.round(framesPerBeat * Math.max(1, beats)));
+    private static short[] createBeat(int bpm, boolean accent, int volumePercent) {
+        int frames = Math.max(1, (int) Math.round(SAMPLE_RATE * 60.0 / Math.max(35, bpm)));
         short[] pcm = new short[frames];
-        int clickFrames = Math.max(1, SAMPLE_RATE * CLICK_MS / 1_000);
+        int clickFrames = Math.min(frames, Math.max(1, SAMPLE_RATE * CLICK_MS / 1000));
         double master = Math.max(0.0, Math.min(1.0, volumePercent / 100.0));
+        double gain = (accent ? 0.78 : 0.58) * master;
+        double f1 = accent ? 1760.0 : 1240.0;
+        double f2 = accent ? 880.0 : 620.0;
 
-        for (int beat = 0; beat < beats; beat++) {
-            int start = (int) Math.round(beat * framesPerBeat);
-            boolean accent = beat == 0;
-            double frequency = accent ? 1_560.0 : 1_050.0;
-            double amplitude = (accent ? 0.42 : 0.29) * master;
-            int available = Math.min(clickFrames, pcm.length - start);
-            for (int i = 0; i < available; i++) {
-                double t = i / (double) SAMPLE_RATE;
-                double envelope = Math.exp(-t * 92.0);
-                double sample = Math.sin(2.0 * Math.PI * frequency * t) * envelope * amplitude;
-                int mixed = pcm[start + i] + (int) Math.round(sample * Short.MAX_VALUE);
-                pcm[start + i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, mixed));
-            }
+        for (int i = 0; i < clickFrames; i++) {
+            double t = i / (double) SAMPLE_RATE;
+            double envelope = Math.exp(-t * 74.0);
+            double attack = Math.min(1.0, i / 18.0);
+            double sample = (
+                    Math.sin(2.0 * Math.PI * f1 * t) * 0.72
+                            + Math.sin(2.0 * Math.PI * f2 * t) * 0.28
+            ) * envelope * attack * gain;
+            int value = (int) Math.round(sample * Short.MAX_VALUE);
+            pcm[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, value));
         }
         return pcm;
     }
 
     private boolean requestAudioFocus() {
+        if (audioManager == null) return true;
         AudioAttributes attrs = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_MEDIA)
-                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build();
 
         AudioManager.OnAudioFocusChangeListener listener = change -> {
-            synchronized (audioLock) {
-                if (change == AudioManager.AUDIOFOCUS_LOSS) {
-                    stopPlaybackAndSelf();
-                } else if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                    if (audioTrack != null && audioTrack.getPlayState() == AudioTrack.PLAYSTATE_PLAYING) {
-                        try { audioTrack.pause(); } catch (RuntimeException ignored) {}
-                        focusPaused = true;
-                    }
-                } else if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
-                    if (audioTrack != null) {
-                        try { audioTrack.setVolume(0.25f); } catch (RuntimeException ignored) {}
-                    }
-                } else if (change == AudioManager.AUDIOFOCUS_GAIN) {
-                    if (audioTrack != null) {
-                        try {
-                            audioTrack.setVolume(1.0f);
-                            if (focusPaused && running) audioTrack.play();
-                        } catch (RuntimeException ignored) {}
-                    }
-                    focusPaused = false;
+            AudioTrack track = audioTrack;
+            if (change == AudioManager.AUDIOFOCUS_LOSS) {
+                stopPlaybackAndSelf();
+            } else if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
+                focusPaused = true;
+                if (track != null) {
+                    try { track.pause(); } catch (RuntimeException ignored) {}
                 }
+            } else if (change == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK) {
+                if (track != null) {
+                    try { track.setVolume(0.25f); } catch (RuntimeException ignored) {}
+                }
+            } else if (change == AudioManager.AUDIOFOCUS_GAIN) {
+                if (track != null) {
+                    try {
+                        track.setVolume(1.0f);
+                        if (focusPaused && running) track.play();
+                    } catch (RuntimeException ignored) {}
+                }
+                focusPaused = false;
             }
         };
         legacyFocusListener = listener;
@@ -342,8 +365,9 @@ public final class BackgroundMetronomeService extends Service {
             return audioManager.requestAudioFocus(focusRequest) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
         }
         return audioManager.requestAudioFocus(
-                listener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
-                == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
+                listener,
+                AudioManager.STREAM_MUSIC,
+                AudioManager.AUDIOFOCUS_GAIN) == AudioManager.AUDIOFOCUS_REQUEST_GRANTED;
     }
 
     private void abandonAudioFocus() {
@@ -358,33 +382,30 @@ public final class BackgroundMetronomeService extends Service {
     }
 
     private void stopPlaybackAndSelf() {
-        if (!running && audioTrack == null) {
-            stopSelf();
-            return;
-        }
         running = false;
         processRunning = false;
         focusPaused = false;
-        generation++;
 
-        Thread thread = buildThread;
-        buildThread = null;
+        Thread thread = audioThread;
+        audioThread = null;
         if (thread != null) thread.interrupt();
 
-        AudioTrack track;
-        synchronized (audioLock) {
-            track = audioTrack;
-            audioTrack = null;
+        AudioTrack track = audioTrack;
+        if (track != null) {
+            try { track.stop(); } catch (RuntimeException ignored) {}
         }
-        releaseTrack(track);
         abandonAudioFocus();
+        stopForegroundCompat();
+        stopSelf();
+    }
+
+    private void stopForegroundCompat() {
         if (Build.VERSION.SDK_INT >= 24) {
             stopForeground(STOP_FOREGROUND_REMOVE);
         } else {
             //noinspection deprecation
             stopForeground(true);
         }
-        stopSelf();
     }
 
     private static void releaseTrack(@Nullable AudioTrack track) {
@@ -392,6 +413,15 @@ public final class BackgroundMetronomeService extends Service {
         try { track.pause(); } catch (RuntimeException ignored) {}
         try { track.flush(); } catch (RuntimeException ignored) {}
         try { track.release(); } catch (RuntimeException ignored) {}
+    }
+
+    private static String toPersianDigits(String value) {
+        if (value == null || value.isEmpty()) return "";
+        final char[] en = {'0','1','2','3','4','5','6','7','8','9'};
+        final char[] fa = {'۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'};
+        String out = value;
+        for (int i = 0; i < en.length; i++) out = out.replace(en[i], fa[i]);
+        return out;
     }
 
     private static String safeSignature(@Nullable String signature) {
@@ -425,14 +455,10 @@ public final class BackgroundMetronomeService extends Service {
         running = false;
         processRunning = false;
         focusPaused = false;
-        generation++;
-        Thread thread = buildThread;
+        Thread thread = audioThread;
         if (thread != null) thread.interrupt();
-        AudioTrack track;
-        synchronized (audioLock) {
-            track = audioTrack;
-            audioTrack = null;
-        }
+        AudioTrack track = audioTrack;
+        audioTrack = null;
         releaseTrack(track);
         abandonAudioFocus();
         super.onDestroy();

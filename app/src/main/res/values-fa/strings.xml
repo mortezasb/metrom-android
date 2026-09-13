@@ -2,28 +2,31 @@
 <resources>
     <string name="app_name">Metrom</string>
     <string name="playback_channel_name">پخش مترونوم</string>
-    <string name="playback_channel_description">پخش مترونوم Metrom را هنگام خاموش بودن صفحه ادامه می‌دهد.</string>
-    <string name="notification_title">Metrom</string>
+    <string name="playback_channel_description">مترونوم را هنگام خاموش بودن صفحه نیز پخش می کند.</string>
+    <string name="notification_title">متروم</string>
     <string name="notification_stop">توقف</string>
-    <string name="secure_launch_title">اجرای امن Metrom کامل نشد</string>
-    <string name="secure_launch_body">مرورگر اندروید را به‌روز کنید و اتصال اینترنت را بررسی کنید، سپس دوباره تلاش کنید. Metrom در پنجره مرورگر تاییدنشده باز نمی‌شود.</string>
+    <string name="secure_launch_title">ورود امن به متروم انجام نشد</string>
+    <string name="secure_launch_body">اتصال اینترنت و مرورگر اندروید را بررسی کنید و دوباره تلاش کنید. برای حفظ امنیت، آدرس سایت در پنجره مرورگر عادی نمایش داده نمی شود.</string>
     <string name="secure_launch_retry">تلاش دوباره</string>
     <string name="loading_metrom">در حال آماده سازی متروم…</string>
 
     <string name="offline_emergency_title">مترونوم اضطراری</string>
-    <string name="offline_emergency_subtitle">اینترنت در دسترس نیست؛ اما ضرب نباید متوقف شود.</string>
+    <string name="offline_emergency_subtitle">اینترنت در دسترس نیست، اما مترونوم همچنان روی همین گوشی کار می کند.</string>
     <string name="offline_connection_badge">حالت آفلاین • مترونوم آماده است</string>
     <string name="offline_connection_restored">اینترنت وصل شد • استودیو آماده است</string>
-    <string name="offline_tempo">سرعت</string>
-    <string name="offline_tap_tempo">Tap Tempo</string>
+    <string name="offline_tempo">سرعت ضرب</string>
+    <string name="offline_bpm_unit">ضرب در دقیقه</string>
+    <string name="offline_tap_tempo">تنظیم با ضربه</string>
     <string name="offline_time_signature">میزان</string>
-    <string name="offline_volume">حجم صدا</string>
+    <string name="offline_volume">حجم صدای مترونوم</string>
     <string name="offline_start_metronome">▶ شروع مترونوم</string>
     <string name="offline_stop_metronome">■ توقف مترونوم</string>
-    <string name="offline_studio_title">Studio و تمرین‌ها</string>
-    <string name="offline_studio_body">این مترونوم کاملا روی گوشی کار می‌کند و به اینترنت نیاز ندارد. برای ورود به Studio، تمرین‌ها، پروژه‌ها و امکانات آنلاین، اینترنت را فعال کنید.</string>
-    <string name="offline_open_studio">ورود به Studio</string>
-    <string name="offline_check_connection">بررسی اینترنت و ورود به Studio</string>
-    <string name="offline_still_offline">هنوز اتصال اینترنت در دسترس نیست.</string>
-    <string name="offline_local_note">صدای مترونوم به صورت محلی تولید می‌شود و هیچ درخواست سروری ندارد.</string>
+    <string name="offline_studio_title">استودیو و تمرین ها</string>
+    <string name="offline_studio_body">مترونوم اضطراری بدون اینترنت و کاملا روی گوشی کار می کند. برای استودیو، تمرین ها، پروژه ها و سایر امکانات آنلاین، اینترنت را فعال کنید.</string>
+    <string name="offline_open_studio">ورود به استودیو</string>
+    <string name="offline_check_connection">بررسی اینترنت و ورود به استودیو</string>
+    <string name="offline_still_offline">هنوز اینترنت در دسترس نیست. مترونوم آفلاین قابل استفاده است.</string>
+    <string name="offline_local_note">صدای مترونوم داخل خود گوشی تولید می شود و هیچ درخواست سروری ندارد.</string>
+    <string name="offline_media_volume_zero">صدای رسانه گوشی روی صفر است. برای شنیدن مترونوم، صدای Media را افزایش دهید.</string>
+    <string name="offline_audio_start_failed">موتور صدا شروع نشد. صدای رسانه گوشی را بررسی کنید و دوباره دکمه شروع را بزنید.</string>
 </resources>

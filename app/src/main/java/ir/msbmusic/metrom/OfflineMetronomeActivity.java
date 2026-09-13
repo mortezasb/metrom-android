@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.media.AudioManager;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.ConnectivityManager;
@@ -155,13 +156,13 @@ public final class OfflineMetronomeActivity extends Activity {
         small.setGravity(Gravity.CENTER);
         tempoCard.addView(small, matchWrap());
 
-        bpmValue = label(String.valueOf(bpm), 58, 0xFFFFFFFF, true);
+        bpmValue = label(toPersianDigits(String.valueOf(bpm)), 58, 0xFFFFFFFF, true);
         bpmValue.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams bpmParams = matchWrap();
         bpmParams.topMargin = dp(2);
         tempoCard.addView(bpmValue, bpmParams);
 
-        TextView bpmUnit = label("BPM", 12, 0xFFFF5D86, true);
+        TextView bpmUnit = label(getString(R.string.offline_bpm_unit), 12, 0xFFFF5D86, true);
         bpmUnit.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams unitParams = matchWrap();
         unitParams.bottomMargin = dp(16);
@@ -293,7 +294,7 @@ public final class OfflineMetronomeActivity extends Activity {
     }
 
     private void addSignatureChip(LinearLayout parent, String value) {
-        TextView chip = actionButton(value, false);
+        TextView chip = actionButton(toPersianDigits(value), false);
         chip.setTag(value);
         chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         chip.setOnClickListener(v -> {
@@ -349,7 +350,7 @@ public final class OfflineMetronomeActivity extends Activity {
 
     private void changeBpm(int delta) {
         bpm = clamp(bpm + delta, MIN_BPM, MAX_BPM);
-        bpmValue.setText(String.valueOf(bpm));
+        bpmValue.setText(toPersianDigits(String.valueOf(bpm)));
         saveSettings();
         if (playing) {
             sendUpdate();
@@ -380,7 +381,7 @@ public final class OfflineMetronomeActivity extends Activity {
         }
         if (intervals == 0) return;
         bpm = clamp((int) Math.round(60_000d / (total / (double) intervals)), MIN_BPM, MAX_BPM);
-        bpmValue.setText(String.valueOf(bpm));
+        bpmValue.setText(toPersianDigits(String.valueOf(bpm)));
         saveSettings();
         if (playing) {
             sendUpdate();
@@ -397,15 +398,28 @@ public final class OfflineMetronomeActivity extends Activity {
             return;
         }
 
+        AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        if (audio != null && audio.getStreamVolume(AudioManager.STREAM_MUSIC) == 0) {
+            Toast.makeText(this, R.string.offline_media_volume_zero, Toast.LENGTH_LONG).show();
+        }
+
         Intent play = new Intent(this, BackgroundMetronomeService.class)
                 .setAction(BackgroundMetronomeService.ACTION_PLAY)
                 .putExtra(BackgroundMetronomeService.EXTRA_BPM, bpm)
                 .putExtra(BackgroundMetronomeService.EXTRA_TIME_SIGNATURE, signature)
                 .putExtra(BackgroundMetronomeService.EXTRA_VOLUME, volume)
-                .putExtra(BackgroundMetronomeService.EXTRA_START_AT_EPOCH_MS, System.currentTimeMillis() + 80L);
+                .putExtra(BackgroundMetronomeService.EXTRA_START_AT_EPOCH_MS, System.currentTimeMillis() + 60L);
         ContextCompat.startForegroundService(this, play);
         playing = true;
         updatePlayState();
+        uiHandler.postDelayed(() -> {
+            boolean actuallyRunning = BackgroundMetronomeService.isRunning();
+            if (playing && !actuallyRunning) {
+                playing = false;
+                updatePlayState();
+                Toast.makeText(this, R.string.offline_audio_start_failed, Toast.LENGTH_LONG).show();
+            }
+        }, 700L);
     }
 
     private void sendUpdate() {
@@ -508,6 +522,15 @@ public final class OfflineMetronomeActivity extends Activity {
         } catch (NumberFormatException ignored) {
             return 4;
         }
+    }
+
+    private String toPersianDigits(String value) {
+        if (value == null || value.isEmpty()) return "";
+        final char[] en = {'0','1','2','3','4','5','6','7','8','9'};
+        final char[] fa = {'۰','۱','۲','۳','۴','۵','۶','۷','۸','۹'};
+        String out = value;
+        for (int i = 0; i < en.length; i++) out = out.replace(en[i], fa[i]);
+        return out;
     }
 
     private TextView label(String text, int sp, int color, boolean bold) {
