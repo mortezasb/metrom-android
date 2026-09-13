@@ -3,12 +3,12 @@
     <style name="Theme.Metrom" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">@color/metrom_background</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:navigationBarColor">@color/metrom_background</item>
         <item name="android:statusBarColor">@color/metrom_background</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:colorAccent">@color/metrom_pink</item>
+        <item name="android:windowBackground">@color/metrom_background</item>
     </style>
 
     <style name="Theme.Metrom.Transparent" parent="android:style/Theme.Material.Light.NoActionBar">
@@ -22,10 +22,15 @@
         <item name="android:colorAccent">@color/metrom_pink</item>
     </style>
 
+    <style name="Theme.Metrom.LaunchCover" parent="Theme.Metrom">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:windowBackground">@color/metrom_background</item>
+    </style>
+
     <style name="Theme.Metrom.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/metrom_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_exact</item>
         <item name="postSplashScreenTheme">@style/Theme.Metrom</item>
     </style>
-
 </resources>

@@ -6,6 +6,15 @@
     <string name="notification_title">Metrom</string>
     <string name="notification_stop">توقف</string>
     <string name="secure_launch_title">اجرای امن Metrom کامل نشد</string>
-    <string name="secure_launch_body">مرورگر اندروید را به‌روز کنید و اتصال اینترنت را بررسی کنید، سپس دوباره تلاش کنید. Metrom در پنجره مرورگر تاییدنشده باز نمی‌شود.</string>
+    <string name="secure_launch_body">اتصال اینترنت و مرورگر اندروید را بررسی کنید و دوباره تلاش کنید. مترونوم آفلاین همچنان بدون اینترنت در دسترس است.</string>
     <string name="secure_launch_retry">تلاش دوباره</string>
+    <string name="secure_launch_offline">استفاده از مترونوم آفلاین</string>
+    <string name="offline_mode_title">مترونوم آفلاین</string>
+    <string name="offline_mode_body">تنظیم سرعت و پخش مترونوم کاملا روی همین گوشی انجام می‌شود و هیچ درخواستی به سرور ارسال نمی‌شود.</string>
+    <string name="offline_tap">TAP</string>
+    <string name="offline_play">پخش</string>
+    <string name="offline_stop">توقف</string>
+    <string name="offline_retry_online">ورود به استودیوی آنلاین</string>
+    <string name="offline_still_offline">هنوز اتصال اینترنت برقرار نیست.</string>
+    <string name="press_back_again_to_exit">برای خروج از Metrom دوباره دکمه بازگشت را بزنید</string>
 </resources>

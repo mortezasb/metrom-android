@@ -1,5 +1,14 @@
-# Validation — Android 1.0.6
+# Validation — Android 1.0.7
 
-Static validation covers XML/JSON/YAML parsing, package/start URL consistency, production signing fingerprint wiring, exact source icon identity, removal of normal browser fallback, and release archive integrity.
+Static validation covers:
+- Android resource XML parsing;
+- Java syntax surface checks;
+- package and `/metrom/` start URL consistency;
+- manifest activity/service/permission wiring;
+- resource/string reference integrity;
+- production signing fingerprint wiring inherited from 1.0.6;
+- offline native metronome source presence;
+- launch-cover/back-stack source presence;
+- final archive integrity.
 
-A real signed Android build is intentionally performed by the repository's `Build Signed Release` GitHub Action because the private keystore remains only in GitHub Secrets and must never be bundled into this source archive.
+The real signed Android build is intentionally performed by GitHub Actions because the private signing key remains only in repository secrets.

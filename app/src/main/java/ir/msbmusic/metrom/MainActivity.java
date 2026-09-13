@@ -50,7 +50,7 @@ public final class MainActivity extends Activity {
     private static final Uri DEFAULT_START_URL = Uri.parse(
             "https://" + HOST + "/metrom/login.php?next=studio.php"
     );
-    private static final long TRUST_TIMEOUT_MS = 8000L;
+    private static final long TRUST_TIMEOUT_MS = 5000L;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -63,6 +63,7 @@ public final class MainActivity extends Activity {
     private boolean navigationFinished;
     private boolean messageChannelRequested;
     private boolean keepLaunchSplash = true;
+    private boolean leftForTwa;
     private Uri launchUrl = DEFAULT_START_URL;
 
     private final Runnable trustTimeout = new Runnable() {
@@ -101,6 +102,7 @@ public final class MainActivity extends Activity {
         public void onNavigationEvent(int navigationEvent, @Nullable Bundle extras) {
             if (navigationEvent == NAVIGATION_FINISHED) {
                 navigationFinished = true;
+                LaunchCoverActivity.dismissActive();
                 maybeOpenMessageChannel();
             }
         }
@@ -167,6 +169,18 @@ public final class MainActivity extends Activity {
         getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.metrom_background));
 
         launchUrl = sanitizeMetromUrl(getIntent() == null ? null : getIntent().getData());
+
+        // Metronome must remain useful without a connection. Do not wait for
+        // browser/domain verification when Android already knows the network is offline.
+        if (!OfflineMetronomeActivity.hasUsableNetwork(this)) {
+            keepLaunchSplash = false;
+            startActivity(new Intent(this, OfflineMetronomeActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION));
+            finish();
+            overridePendingTransition(0, 0);
+            return;
+        }
+
         bindBrowserAndLaunch();
     }
 
@@ -174,14 +188,21 @@ public final class MainActivity extends Activity {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        Uri next = sanitizeMetromUrl(intent == null ? null : intent.getData());
-        if (!next.equals(launchUrl)) {
-            launchUrl = next;
-            twaLaunched = false;
-            navigationFinished = false;
-            messageChannelRequested = false;
-            if (session != null && handleAllUrlsValidated) launchTwa();
+        leftForTwa = false;
+        launchUrl = sanitizeMetromUrl(intent == null ? null : intent.getData());
+        twaLaunched = false;
+        navigationFinished = false;
+        messageChannelRequested = false;
+        if (!OfflineMetronomeActivity.hasUsableNetwork(this)) {
+            keepLaunchSplash = false;
+            startActivity(new Intent(this, OfflineMetronomeActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION));
+            finish();
+            overridePendingTransition(0, 0);
+            return;
         }
+        if (session != null && handleAllUrlsValidated) launchTwa();
+        else if (!bound) bindBrowserAndLaunch();
     }
 
     private Uri sanitizeMetromUrl(@Nullable Uri candidate) {
@@ -207,12 +228,20 @@ public final class MainActivity extends Activity {
     private void launchTwa() {
         if (twaLaunched || session == null || !handleAllUrlsValidated) return;
         twaLaunched = true;
+        leftForTwa = false;
         mainHandler.removeCallbacks(trustTimeout);
-        keepLaunchSplash = false;
         try {
+            // Launch the verified TWA first, then immediately cover its cold-start
+            // hand-off with a visually identical native launch surface. This prevents
+            // a transient Custom Tab URL/toolbar flash before the first web paint.
+            LaunchCoverActivity.prepareForLaunch();
             new TrustedWebActivityIntentBuilder(launchUrl)
                     .build(session)
                     .launchTrustedWebActivity(this);
+            startActivity(new Intent(this, LaunchCoverActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION | Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS));
+            overridePendingTransition(0, 0);
+            keepLaunchSplash = false;
         } catch (RuntimeException ex) {
             Log.w(TAG, "Verified TWA launch failed", ex);
             twaLaunched = false;
@@ -227,6 +256,7 @@ public final class MainActivity extends Activity {
      */
     private void showSecureLaunchError() {
         mainHandler.removeCallbacks(trustTimeout);
+        LaunchCoverActivity.dismissActive();
         keepLaunchSplash = false;
         if (isFinishing() || isDestroyed()) return;
 
@@ -275,6 +305,21 @@ public final class MainActivity extends Activity {
             root.addView(retry, new LinearLayout.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
             ));
+
+            Button offline = new Button(this);
+            offline.setText(R.string.secure_launch_offline);
+            offline.setAllCaps(false);
+            offline.setOnClickListener(v -> {
+                startActivity(new Intent(this, OfflineMetronomeActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION));
+                finish();
+                overridePendingTransition(0, 0);
+            });
+            LinearLayout.LayoutParams offlineParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
+            );
+            offlineParams.topMargin = dp(10);
+            root.addView(offline, offlineParams);
 
             setContentView(root);
         });
@@ -395,6 +440,28 @@ public final class MainActivity extends Activity {
 
     private static int clamp(int value, int min, int max) {
         return Math.max(min, Math.min(max, value));
+    }
+
+    @Override
+    protected void onPause() {
+        if (twaLaunched) leftForTwa = true;
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Returning here means the external TWA surface has closed. Finish this
+        // invisible host immediately so Back never reveals a black/splash page.
+        if (twaLaunched && leftForTwa) {
+            LaunchCoverActivity.dismissActive();
+            mainHandler.post(() -> {
+                if (!isFinishing() && !isDestroyed()) {
+                    finishAndRemoveTask();
+                    overridePendingTransition(0, 0);
+                }
+            });
+        }
     }
 
     @Override

@@ -1,0 +1,13 @@
+Metrom Android 1.0.7 validation
+
+- Android XML parse: PASS
+- Android JSON parse: PASS
+- Java syntax surface check: PASS (no syntax diagnostics detected before Android classpath resolution)
+- Drawable/string resource reference scan: PASS
+- Package: ir.msbmusic.metrom
+- Online start URL: https://msbmusic.ir/metrom/login.php?next=studio.php
+- Offline native metronome source: present
+- Launch cover source: present
+- ACCESS_NETWORK_STATE permission: present
+- Release signing/Digital Asset Links workflow: retained from 1.0.6
+- Final ZIP integrity: checked after packaging

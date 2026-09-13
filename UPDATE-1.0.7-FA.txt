@@ -1,0 +1,35 @@
+Metrom Android 1.0.7 update from 1.0.6
+
+فایل های این پوشه را با حفظ مسیر روی Repository فعلی جایگزین کنید. فایل های قدیمی که در این بسته نیستند حذف نشوند.
+
+Changed files:
+- VALIDATION-1.0.7.txt
+- RELEASE-1.0.7-FA.md
+- VERSION
+- README-FA.md
+- README.md
+- VALIDATION.md
+- brand/metrom-icon-512.png
+- brand/metrom-icon-1024.png
+- app/src/main/AndroidManifest.xml
+- app/src/main/java/ir/msbmusic/metrom/MainActivity.java
+- app/src/main/java/ir/msbmusic/metrom/LaunchCoverActivity.java
+- app/src/main/java/ir/msbmusic/metrom/OfflineMetronomeActivity.java
+- app/src/main/res/drawable/offline_button_bg.xml
+- app/src/main/res/drawable/offline_button_play_bg.xml
+- app/src/main/res/drawable/offline_card_bg.xml
+- app/src/main/res/drawable/offline_button_stop_bg.xml
+- app/src/main/res/values-fa/strings.xml
+- app/src/main/res/mipmap-xhdpi/ic_launcher.png
+- app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+- app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+- app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+- app/src/main/res/mipmap-hdpi/ic_launcher.png
+- app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+- app/src/main/res/values/strings.xml
+- app/src/main/res/values/styles.xml
+- app/src/main/res/mipmap-mdpi/ic_launcher.png
+- app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+- app/src/main/res/drawable-nodpi/metrom_site_icon.png
+- app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+- app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
