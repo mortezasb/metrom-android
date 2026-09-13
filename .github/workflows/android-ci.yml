@@ -38,7 +38,19 @@ jobs:
           gradle-version: '9.6.0'
 
       - name: Lint and build debug APK
-        run: gradle --no-daemon :app:lintDebug :app:assembleDebug
+        shell: bash
+        run: |
+          set -o pipefail
+          gradle --no-daemon --stacktrace --warning-mode all :app:lintDebug :app:assembleDebug 2>&1 | tee gradle-debug.log
+
+      - name: Upload Gradle diagnostic log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrom-gradle-debug-log
+          path: gradle-debug.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4

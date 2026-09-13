@@ -59,13 +59,15 @@ jobs:
 
       - name: Build signed AAB and APK
         run: |
-          gradle --no-daemon clean :app:lintRelease :app:bundleRelease :app:assembleRelease \
+          gradle --no-daemon --stacktrace --warning-mode all clean :app:lintRelease :app:bundleRelease :app:assembleRelease \
             -PMETROM_VERSION_CODE=${{ inputs.version_code }} \
             -PMETROM_VERSION_NAME=${{ inputs.version_name }}
 
-      - name: Verify signing
+      - name: Verify signing and create release report
         run: |
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk | tee signing-report.txt
+          sha256sum app/build/outputs/apk/release/app-release.apk > release-sha256.txt
+          sha256sum app/build/outputs/bundle/release/app-release.aab >> release-sha256.txt
 
       - name: Upload Play AAB
         uses: actions/upload-artifact@v4
@@ -81,4 +83,16 @@ jobs:
           name: metrom-${{ inputs.version_name }}-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+          retention-days: 30
+
+
+      - name: Upload release metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: metrom-${{ inputs.version_name }}-release-info
+          path: |
+            signing-report.txt
+            release-sha256.txt
+            app/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: warn
           retention-days: 30
