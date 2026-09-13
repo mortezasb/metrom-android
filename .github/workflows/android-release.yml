@@ -26,10 +26,10 @@ jobs:
       METROM_KEY_PASSWORD: ${{ secrets.METROM_KEY_PASSWORD }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -56,6 +56,7 @@ jobs:
           test -n "$METROM_KEY_ALIAS" || (echo "Missing METROM_KEY_ALIAS" && exit 1)
           test -n "$METROM_KEY_PASSWORD" || (echo "Missing METROM_KEY_PASSWORD" && exit 1)
           printf '%s' "$METROM_KEYSTORE_BASE64" | base64 --decode > "$METROM_KEYSTORE_FILE"
+          keytool -list -keystore "$METROM_KEYSTORE_FILE" -storepass "$METROM_KEYSTORE_PASSWORD" -alias "$METROM_KEY_ALIAS" >/dev/null
 
       - name: Build signed AAB and APK
         run: |
