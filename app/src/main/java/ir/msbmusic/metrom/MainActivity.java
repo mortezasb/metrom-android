@@ -3,10 +3,20 @@ package ir.msbmusic.metrom;
 import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -23,37 +33,65 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * Thin Android shell for Metrom.
+ * Production Android shell for Metrom.
  *
- * The visible product stays in the TWA. This Activity only:
- *  - binds/warmups the user's Custom Tabs provider,
- *  - verifies msbmusic.ir with Digital Asset Links,
- *  - launches only URLs under /metrom/,
- *  - provides the postMessage bridge used by the native background metronome.
- *
- * It deliberately does not poll the website or prefetch studio.php.
+ * The visible product runs as a verified Trusted Web Activity. The Activity:
+ *  - keeps the Android splash visible until a trusted TWA can launch,
+ *  - validates Digital Asset Links before exposing web content,
+ *  - never intentionally falls back to a normal browser/custom-tab toolbar,
+ *  - limits Android app-links to https://msbmusic.ir/metrom/,
+ *  - provides the postMessage bridge for the native background metronome.
  */
 public final class MainActivity extends Activity {
     private static final String TAG = "MetromTWA";
     private static final String HOST = "msbmusic.ir";
     private static final String PATH_PREFIX = "/metrom/";
     private static final Uri ORIGIN = Uri.parse("https://" + HOST);
-    private static final Uri DEFAULT_START_URL = Uri.parse("https://" + HOST + "/metrom/login.php?next=studio.php");
+    private static final Uri DEFAULT_START_URL = Uri.parse(
+            "https://" + HOST + "/metrom/login.php?next=studio.php"
+    );
+    private static final long TRUST_TIMEOUT_MS = 8000L;
+
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     private CustomTabsClient client;
     private CustomTabsSession session;
     private boolean bound;
     private boolean twaLaunched;
+    private boolean handleAllUrlsValidated;
     private boolean originValidated;
     private boolean navigationFinished;
     private boolean messageChannelRequested;
+    private boolean keepLaunchSplash = true;
     private Uri launchUrl = DEFAULT_START_URL;
+
+    private final Runnable trustTimeout = new Runnable() {
+        @Override
+        public void run() {
+            if (!twaLaunched && !handleAllUrlsValidated) {
+                showSecureLaunchError();
+            }
+        }
+    };
 
     private final CustomTabsCallback callback = new CustomTabsCallback() {
         @Override
         public void onRelationshipValidationResult(int relation, @NonNull Uri requestedOrigin,
                                                    boolean result, @Nullable Bundle extras) {
-            if (relation == CustomTabsService.RELATION_USE_AS_ORIGIN && ORIGIN.equals(requestedOrigin)) {
+            if (!ORIGIN.equals(requestedOrigin)) return;
+
+            if (relation == CustomTabsService.RELATION_HANDLE_ALL_URLS) {
+                mainHandler.removeCallbacks(trustTimeout);
+                handleAllUrlsValidated = result;
+                if (result) {
+                    launchTwa();
+                } else {
+                    showSecureLaunchError();
+                }
+                return;
+            }
+
+            if (relation == CustomTabsService.RELATION_USE_AS_ORIGIN) {
                 originValidated = result;
                 maybeOpenMessageChannel();
             }
@@ -83,14 +121,27 @@ public final class MainActivity extends Activity {
         public void onCustomTabsServiceConnected(@NonNull ComponentName name,
                                                  @NonNull CustomTabsClient connectedClient) {
             client = connectedClient;
-            client.warmup(0L); // Browser process warmup only; no network prefetch.
+            client.warmup(0L); // Browser process only; no page/network prefetch.
             session = client.newSession(callback);
             if (session == null) {
-                openBrowserFallback(launchUrl);
+                showSecureLaunchError();
                 return;
             }
-            session.validateRelationship(CustomTabsService.RELATION_USE_AS_ORIGIN, ORIGIN, null);
-            launchTwa();
+
+            boolean trustRequested = session.validateRelationship(
+                    CustomTabsService.RELATION_HANDLE_ALL_URLS, ORIGIN, null
+            );
+            session.validateRelationship(
+                    CustomTabsService.RELATION_USE_AS_ORIGIN, ORIGIN, null
+            );
+
+            if (!trustRequested) {
+                showSecureLaunchError();
+                return;
+            }
+
+            mainHandler.removeCallbacks(trustTimeout);
+            mainHandler.postDelayed(trustTimeout, TRUST_TIMEOUT_MS);
         }
 
         @Override
@@ -98,6 +149,7 @@ public final class MainActivity extends Activity {
             client = null;
             session = null;
             messageChannelRequested = false;
+            handleAllUrlsValidated = false;
             originValidated = false;
             navigationFinished = false;
         }
@@ -105,10 +157,15 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
-        // AndroidX SplashScreen gives Android 6+ one consistent, platform-native
-        // launch surface and avoids a duplicate custom Splash Activity on Android 12+.
-        SplashScreen.installSplashScreen(this);
+        SplashScreen splashScreen = SplashScreen.installSplashScreen(this);
+        splashScreen.setKeepOnScreenCondition(() -> keepLaunchSplash);
         super.onCreate(savedInstanceState);
+
+        // The post-splash Activity has no web content of its own. Keeping its window
+        // dark prevents a white frame while Chrome/TWA is being prepared.
+        getWindow().setStatusBarColor(ContextCompat.getColor(this, R.color.metrom_background));
+        getWindow().setNavigationBarColor(ContextCompat.getColor(this, R.color.metrom_background));
+
         launchUrl = sanitizeMetromUrl(getIntent() == null ? null : getIntent().getData());
         bindBrowserAndLaunch();
     }
@@ -123,7 +180,7 @@ public final class MainActivity extends Activity {
             twaLaunched = false;
             navigationFinished = false;
             messageChannelRequested = false;
-            if (session != null) launchTwa();
+            if (session != null && handleAllUrlsValidated) launchTwa();
         }
     }
 
@@ -140,33 +197,110 @@ public final class MainActivity extends Activity {
     private void bindBrowserAndLaunch() {
         String browserPackage = CustomTabsClient.getPackageName(this, null);
         if (browserPackage == null) {
-            openBrowserFallback(launchUrl);
+            showSecureLaunchError();
             return;
         }
         bound = CustomTabsClient.bindCustomTabsService(this, browserPackage, tabsConnection);
-        if (!bound) openBrowserFallback(launchUrl);
+        if (!bound) showSecureLaunchError();
     }
 
     private void launchTwa() {
-        if (twaLaunched || session == null) return;
+        if (twaLaunched || session == null || !handleAllUrlsValidated) return;
         twaLaunched = true;
+        mainHandler.removeCallbacks(trustTimeout);
+        keepLaunchSplash = false;
         try {
             new TrustedWebActivityIntentBuilder(launchUrl)
                     .build(session)
                     .launchTrustedWebActivity(this);
         } catch (RuntimeException ex) {
-            Log.w(TAG, "TWA launch failed; opening browser fallback", ex);
-            openBrowserFallback(launchUrl);
+            Log.w(TAG, "Verified TWA launch failed", ex);
+            twaLaunched = false;
+            showSecureLaunchError();
         }
     }
 
-    private void openBrowserFallback(Uri url) {
-        try {
-            Intent browser = new Intent(Intent.ACTION_VIEW, url);
-            startActivity(browser);
-        } catch (RuntimeException ex) {
-            Log.e(TAG, "No browser available", ex);
+    /**
+     * Never open the public URL in a visible browser fallback. If the browser cannot
+     * verify the production Digital Asset Links relationship, keep the user in a
+     * native Metrom surface and allow a retry instead of exposing an address bar.
+     */
+    private void showSecureLaunchError() {
+        mainHandler.removeCallbacks(trustTimeout);
+        keepLaunchSplash = false;
+        if (isFinishing() || isDestroyed()) return;
+
+        runOnUiThread(() -> {
+            LinearLayout root = new LinearLayout(this);
+            root.setOrientation(LinearLayout.VERTICAL);
+            root.setGravity(Gravity.CENTER);
+            root.setPadding(dp(28), dp(32), dp(28), dp(32));
+            root.setBackgroundColor(ContextCompat.getColor(this, R.color.metrom_background));
+
+            ImageView logo = new ImageView(this);
+            logo.setImageResource(R.drawable.metrom_site_icon);
+            logo.setContentDescription(getString(R.string.app_name));
+            LinearLayout.LayoutParams logoParams = new LinearLayout.LayoutParams(dp(96), dp(96));
+            logoParams.bottomMargin = dp(22);
+            root.addView(logo, logoParams);
+
+            TextView title = new TextView(this);
+            title.setText(R.string.secure_launch_title);
+            title.setTextColor(Color.WHITE);
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+            title.setGravity(Gravity.CENTER);
+            title.setTypeface(title.getTypeface(), android.graphics.Typeface.BOLD);
+            LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            titleParams.bottomMargin = dp(10);
+            root.addView(title, titleParams);
+
+            TextView body = new TextView(this);
+            body.setText(R.string.secure_launch_body);
+            body.setTextColor(0xFFB9C0D0);
+            body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+            body.setGravity(Gravity.CENTER);
+            body.setLineSpacing(0f, 1.2f);
+            LinearLayout.LayoutParams bodyParams = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            bodyParams.bottomMargin = dp(22);
+            root.addView(body, bodyParams);
+
+            Button retry = new Button(this);
+            retry.setText(R.string.secure_launch_retry);
+            retry.setAllCaps(false);
+            retry.setOnClickListener(v -> retrySecureLaunch());
+            root.addView(retry, new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT, dp(52)
+            ));
+
+            setContentView(root);
+        });
+    }
+
+    private void retrySecureLaunch() {
+        mainHandler.removeCallbacks(trustTimeout);
+        twaLaunched = false;
+        handleAllUrlsValidated = false;
+        originValidated = false;
+        navigationFinished = false;
+        messageChannelRequested = false;
+        session = null;
+        client = null;
+        if (bound) {
+            try {
+                unbindService(tabsConnection);
+            } catch (IllegalArgumentException ignored) {
+            }
+            bound = false;
         }
+        bindBrowserAndLaunch();
+    }
+
+    private int dp(int value) {
+        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 
     private void maybeOpenMessageChannel() {
@@ -226,10 +360,6 @@ public final class MainActivity extends Activity {
         Intent update = serviceIntent(BackgroundMetronomeService.ACTION_UPDATE, payload);
         BackgroundMetronomeService.sendControl(this, BackgroundMetronomeService.ACTION_UPDATE, update.getExtras());
 
-        // Android 12+ may reject a foreground-service start from this host Activity
-        // because the visible TWA belongs to the browser package. The 5.5.3 web bridge
-        // therefore opens PlaybackBridgeActivity from the actual Play tap. On Android
-        // 11 and older, direct start is also safe as a backwards-compatible fallback.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             try {
                 ContextCompat.startForegroundService(this,
@@ -269,6 +399,7 @@ public final class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        mainHandler.removeCallbacks(trustTimeout);
         if (bound) {
             try {
                 unbindService(tabsConnection);

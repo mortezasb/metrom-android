@@ -5,4 +5,7 @@
     <string name="playback_channel_description">Keeps the Metrom metronome playing while the screen is off.</string>
     <string name="notification_title">Metrom</string>
     <string name="notification_stop">Stop</string>
+    <string name="secure_launch_title">Metrom could not start securely</string>
+    <string name="secure_launch_body">Update your Android browser and check your internet connection, then try again. Metrom will not open in an unverified browser window.</string>
+    <string name="secure_launch_retry">Try again</string>
 </resources>

@@ -1,0 +1,20 @@
+Metrom Android 1.0.6 static validation
+======================================
+PASS - 19 Android XML files parse successfully
+PASS - 2 JSON files parse successfully
+PASS - 2 GitHub workflow YAML files parse successfully
+PASS - VERSION = 1.0.6
+PASS - production applicationId = ir.msbmusic.metrom
+PASS - launcher start URL = https://msbmusic.ir/metrom/login.php?next=studio.php
+PASS - all Metrom web paths are lowercase /metrom/
+PASS - no normal browser URL fallback remains in MainActivity
+PASS - Digital Asset Links RELATION_HANDLE_ALL_URLS gates the TWA launch
+PASS - SplashScreen is kept until trusted TWA launch, removing the white intermediate frame
+PASS - post-splash Android window background is Metrom dark background
+PASS - release workflow pins expected production SHA-256 certificate
+PASS - release workflow verifies live /.well-known/assetlinks.json before build
+PASS - final release artifacts are clearly named SIGNED-APK and AAB
+PASS - production assetlinks package/fingerprint match ir.msbmusic.metrom
+PASS - Android drawable metrom_site_icon.png is byte-identical to brand/metrom-icon-512.png
+
+Note: A real signed Android build is intentionally executed in GitHub Actions because the private release keystore is not bundled with source and must remain secret.

@@ -17,3 +17,8 @@
 10. مجوزهای برنامه فقط برای اینترنت، Foreground media playback و Notification استفاده می‌شوند؛ Location/Camera/Microphone/Storage درخواست نمی‌شوند.
 11. آیکون، نام برنامه و اسکرین‌شات‌های فروشگاه باید با محصول واقعی Metrom یکسان باشند.
 12. فایل Keystore و رمزهای امضا را در GitHub یا فایل عمومی قرار ندهید.
+
+## نکته نسخه 1.0.6
+برای مایکت فقط Artifact امضاشده Workflow `Build Signed Release` را استفاده کنید. APK دیباگ برای انتشار نیست و چون package آن `ir.msbmusic.metrom.debug` و امضای آن Debug است، TWA تولید را Verify نمی‌کند و ممکن است نوار مرورگر نشان دهد.
+
+نسخه Release قبل از Build، SHA-256 کلید انتشار و Digital Asset Links زنده سایت را بررسی می‌کند. Start URL نهایی نیز `https://msbmusic.ir/metrom/login.php?next=studio.php` است.

@@ -1,20 +1,29 @@
-# Metrom Android 1.0.5 — نسخه نهایی انتشار
+# Metrom Android 1.0.6 — Production Release
 
-- دامنه: `msbmusic.ir`
-- Scope اپ: `https://msbmusic.ir/metrom/`
-- صفحه شروع اپ: `https://msbmusic.ir/metrom/login.php?next=studio.php`
-- پکیج: `ir.msbmusic.metrom`
-- لانچر و Splash از همان فایل `icon-512.png` سایت ساخته شده‌اند.
-- TWA بعد از Digital Asset Links معتبر، بدون نوار مرورگر و بدون نمایش URL اجرا می‌شود.
-- Signed Release با چهار Secret گیت‌هاب ساخته می‌شود.
-- خطای Signing نسخه 1.0.4 ناشی از هم‌نام بودن متغیر Groovy `keyPassword` با property DSL در 1.0.5 رفع شده است.
+این شاخه برای ساخت نسخه نهایی امضاشده Metrom است.
 
-## انتشار
-1. فایل سایت 5.5.5 را روی `/metrom/` Direct Overwrite کنید.
-2. `assetlinks.json` مشترک MSB + Metrom باید در `https://msbmusic.ir/.well-known/assetlinks.json` باقی بماند.
-3. سورس 1.0.5 را روی GitHub جایگزین کنید.
-4. Android CI را اجرا کنید.
-5. Build Signed Release را با `version_code=1` و `version_name=1.0.0` اجرا کنید.
-6. APK برای مایکت/نصب مستقیم و AAB برای Google Play استفاده می‌شود.
+## تفاوت Debug و Release
+- `Android CI` فقط صحت سورس را با APK دیباگ بررسی می‌کند. نسخه Debug برای انتشار نیست و به علت `applicationIdSuffix=.debug` و امضای Debug، TWA تولید را Verify نمی‌کند.
+- `Build Signed Release` خروجی واقعی انتشار را با package نهایی `ir.msbmusic.metrom` و کلید Release می‌سازد.
 
-نکته: Debug APK با گواهی Debug امضا می‌شود و چون SHA آن در assetlinks تولید نیست، ممکن است نوار مرورگر نشان دهد. معیار تست Full-screen، Signed Release است.
+## رفتار نهایی 1.0.6
+- شروع اپ: `https://msbmusic.ir/metrom/login.php?next=studio.php`
+- Splash فقط یک سطح استاندارد Android است و تا آماده شدن TWA روی همان سطح می‌ماند؛ فریم سفید بین Splash و اپ حذف شده است.
+- آیکون و Splash از Artwork اصلی سایت `brand/metrom-icon-512.png` استفاده می‌کنند.
+- قبل از نمایش محتوای وب، رابطه `handle_all_urls` با Digital Asset Links بررسی می‌شود.
+- اگر رابطه امن تایید نشود، Metrom یک صفحه Native داخلی با Retry نشان می‌دهد و عمدا URL سایت را در Browser/Custom Tab باز نمی‌کند.
+- Workflow انتشار SHA-256 کلید Release و `assetlinks.json` زنده سایت را قبل از Build بررسی می‌کند.
+
+## ساخت نسخه نهایی
+GitHub > Actions > Build Signed Release > Run workflow
+
+برای اولین انتشار:
+- version_code: `1`
+- version_name: `1.0.0`
+
+Artifactهای نهایی:
+- `METROM-FINAL-1.0.0-SIGNED-APK`
+- `METROM-FINAL-1.0.0-AAB`
+- `METROM-FINAL-1.0.0-RELEASE-INFO`
+
+APK امضاشده برای نصب مستقیم/مایکت است. AAB برای Google Play است.

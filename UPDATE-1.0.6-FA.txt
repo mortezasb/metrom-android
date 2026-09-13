@@ -1,0 +1,13 @@
+Metrom Android 1.0.6 — Update from 1.0.5
+
+فایل‌های این ZIP را با حفظ مسیرها روی Repository فعلی جایگزین کنید.
+اگر فایل VALIDATION-1.0.5.txt در Repository مانده، می‌توانید آن را حذف کنید؛ برای Build تاثیری ندارد.
+
+تغییرات اصلی:
+- Splash تک‌مرحله‌ای؛ جلوگیری از فریم سفید بین Splash و TWA.
+- Start URL نهایی login.php?next=studio.php.
+- TWA فقط پس از تایید Digital Asset Links باز می‌شود.
+- حذف Browser fallback که URL سایت را نشان می‌داد؛ در خطای Verify یک صفحه Native داخلی نمایش داده می‌شود.
+- Launcher/Splash از Artwork اصلی سایت استفاده می‌کنند.
+- Workflow Release کلید امضا و assetlinks زنده را قبل از Build بررسی می‌کند.
+- Artifact نهایی Signed APK / AAB واضح نام‌گذاری می‌شود.
