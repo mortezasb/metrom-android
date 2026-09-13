@@ -6,15 +6,9 @@
     <string name="notification_title">Metrom</string>
     <string name="notification_stop">Stop</string>
     <string name="secure_launch_title">Metrom could not start securely</string>
-    <string name="secure_launch_body">Check your connection and Android browser, then try again. You can still use the metronome offline.</string>
+    <string name="secure_launch_body">Update your Android browser and check your internet connection, then try again. Metrom will not open in an unverified browser window.</string>
     <string name="secure_launch_retry">Try again</string>
-    <string name="secure_launch_offline">Use offline metronome</string>
-    <string name="offline_mode_title">Offline metronome</string>
-    <string name="offline_mode_body">Tempo and playback work locally on this phone with no server request or internet connection.</string>
-    <string name="offline_tap">TAP</string>
-    <string name="offline_play">Play</string>
-    <string name="offline_stop">Stop</string>
-    <string name="offline_retry_online">Open online studio</string>
-    <string name="offline_still_offline">You are still offline.</string>
-    <string name="press_back_again_to_exit">Press Back again to exit Metrom</string>
+    <string name="loading_metrom">Preparing Metrom…</string>
+    <string name="offline_first_run_title">One online start is required</string>
+    <string name="offline_first_run_body">Connect to the internet once so Metrom can verify the secure app link and save the Studio for offline use. After that, the cached Studio can start without a connection.</string>
 </resources>

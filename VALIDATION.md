@@ -1,14 +1,7 @@
-# Validation — Android 1.0.7
+# Validation — Android source revision 1.0.7
 
-Static validation covers:
-- Android resource XML parsing;
-- Java syntax surface checks;
-- package and `/metrom/` start URL consistency;
-- manifest activity/service/permission wiring;
-- resource/string reference integrity;
-- production signing fingerprint wiring inherited from 1.0.6;
-- offline native metronome source presence;
-- launch-cover/back-stack source presence;
-- final archive integrity.
+Static validation covers XML/JSON/YAML parsing, first-release versionCode/versionName defaults, package/start URL consistency, production signing wiring, exact source icon identity, no browser fallback, offline-first trust gating, local loading surfaces, FileProvider scope and release archive integrity.
 
-The real signed Android build is intentionally performed by GitHub Actions because the private signing key remains only in repository secrets.
+The public store release is still `versionCode=1` / `versionName=1.0.0`. A real signed Android build is intentionally performed by the repository's `Build Signed Release` GitHub Action because the private keystore remains only in GitHub Secrets and must never be bundled into this source archive.
+
+- Offline TWA launch is allowed only after prior trust and only with the same verified browser provider, preventing an unverified offline browser fallback.

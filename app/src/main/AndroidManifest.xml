@@ -63,22 +63,6 @@
             </intent-filter>
         </activity>
 
-
-        <activity
-            android:name=".LaunchCoverActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:noHistory="true"
-            android:taskAffinity=""
-            android:theme="@style/Theme.Metrom.LaunchCover" />
-
-        <activity
-            android:name=".OfflineMetronomeActivity"
-            android:excludeFromRecents="false"
-            android:exported="false"
-            android:screenOrientation="unspecified"
-            android:theme="@style/Theme.Metrom" />
-
         <!--
           User-gesture bridge used to start media playback legally on Android 12+.
           It is transparent, has no UI, starts the mediaPlayback FGS, then returns
@@ -100,6 +84,16 @@
                     android:pathPrefix="/start" />
             </intent-filter>
         </activity>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <service
             android:name=".BackgroundMetronomeService"

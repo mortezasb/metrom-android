@@ -1,13 +1,23 @@
-Metrom Android 1.0.7 validation
+Metrom Android source revision 1.0.7 static validation
+======================================================
+PASS - 20 Android XML files parse successfully
+PASS - 2 JSON files parse successfully
+PASS - 2 GitHub workflow YAML files parse successfully
+PASS - VERSION = 1.0.7
+PASS - production applicationId = ir.msbmusic.metrom
+PASS - first store release defaults remain versionCode=1 / versionName=1.0.0
+PASS - launcher start URL = https://msbmusic.ir/metrom/login.php?next=studio.php
+PASS - no normal browser ACTION_VIEW fallback exists in MainActivity
+PASS - online launch still gates TWA on Digital Asset Links RELATION_HANDLE_ALL_URLS
+PASS - offline launch requires a prior successful trust validation stored locally
+PASS - offline launch is limited to the same previously verified browser provider
+PASS - first branded Android splash is followed by a Native ProgressBar loader, not a duplicate logo
+PASS - supported TWA providers receive a local loading-ring splash image
+PASS - FileProvider is scoped only to app files/twa_splash/
+PASS - ACCESS_NETWORK_STATE is used only for local validated-connectivity detection
+PASS - native BackgroundMetronomeService remains HTTP/polling free
+PASS - production assetlinks package/fingerprint files remain present
+PASS - Android drawable metrom_site_icon.png is byte-identical to brand/metrom-icon-512.png
+PASS - twa_loading_ring.png is a local 256x256 PNG resource
 
-- Android XML parse: PASS
-- Android JSON parse: PASS
-- Java syntax surface check: PASS (no syntax diagnostics detected before Android classpath resolution)
-- Drawable/string resource reference scan: PASS
-- Package: ir.msbmusic.metrom
-- Online start URL: https://msbmusic.ir/metrom/login.php?next=studio.php
-- Offline native metronome source: present
-- Launch cover source: present
-- ACCESS_NETWORK_STATE permission: present
-- Release signing/Digital Asset Links workflow: retained from 1.0.6
-- Final ZIP integrity: checked after packaging
+Note: a real signed Android build is intentionally executed in GitHub Actions because the private release keystore is not bundled with source and must remain secret.
