@@ -1,0 +1,15 @@
+Metrom Android — Source Revision 1.0.9
+Lint ResourceType Build Fix
+
+رفع خطای:
+Expected resource of type raw [ResourceType]
+
+تغییر انجام شده:
+- twa_loading_ring.png از res/drawable-nodpi به res/raw منتقل شد.
+- MainActivity.java اکنون از R.raw.twa_loading_ring در openRawResource() استفاده می کند.
+- هیچ lint suppression یا baseline اضافه نشده است.
+- منطق Loading، TWA، Offline-first و Native Metronome تغییری نکرده است.
+- versionCode فروشگاه همچنان 1 و versionName همچنان 1.0.0 است مگر هنگام اجرای workflow مقدار دیگری وارد شود.
+
+اگر Patch را روی Repository قبلی اعمال می کنید، باقی ماندن نسخه قدیمی فایل در drawable-nodpi باعث خطای Build نمی شود،
+اما برای تمیزی پروژه می توانید app/src/main/res/drawable-nodpi/twa_loading_ring.png را حذف کنید.

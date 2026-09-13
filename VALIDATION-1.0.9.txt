@@ -1,0 +1,11 @@
+Metrom Android source revision 1.0.9 static validation
+
+PASS - MainActivity uses Resources.openRawResource(R.raw.twa_loading_ring)
+PASS - app/src/main/res/raw/twa_loading_ring.png exists
+PASS - old drawable-nodpi/twa_loading_ring.png removed from full source
+PASS - no R.drawable.twa_loading_ring reference remains
+PASS - loading ring is PNG 256x256 RGBA
+PASS - no lint suppression or lint baseline introduced
+PASS - default store versionCode remains 1
+PASS - default store versionName remains 1.0.0
+PASS - Offline-first/TWA/Native metronome behavior otherwise unchanged

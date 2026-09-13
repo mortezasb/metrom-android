@@ -353,7 +353,7 @@ public final class MainActivity extends Activity {
     }
 
     private void copyLoadingSplash(@NonNull File destination) throws Exception {
-        try (InputStream input = getResources().openRawResource(R.drawable.twa_loading_ring);
+        try (InputStream input = getResources().openRawResource(R.raw.twa_loading_ring);
              FileOutputStream output = new FileOutputStream(destination, false)) {
             byte[] buffer = new byte[8192];
             int read;
