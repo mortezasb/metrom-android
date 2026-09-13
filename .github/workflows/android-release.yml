@@ -24,6 +24,9 @@ jobs:
       METROM_KEYSTORE_PASSWORD: ${{ secrets.METROM_KEYSTORE_PASSWORD }}
       METROM_KEY_ALIAS: ${{ secrets.METROM_KEY_ALIAS }}
       METROM_KEY_PASSWORD: ${{ secrets.METROM_KEY_PASSWORD }}
+      METROM_EXPECTED_CERT_SHA256: AA:16:46:81:E2:22:06:31:F1:02:A5:64:8A:35:F1:42:72:96:3F:86:14:31:67:3E:F0:0C:91:B7:60:74:EF:1D
+      METROM_ASSETLINKS_URL: https://msbmusic.ir/.well-known/assetlinks.json
+      METROM_PACKAGE: ir.msbmusic.metrom
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -47,53 +50,92 @@ jobs:
         with:
           gradle-version: '9.6.0'
 
-      - name: Restore release keystore
+      - name: Restore and verify production keystore
         env:
           METROM_KEYSTORE_BASE64: ${{ secrets.METROM_KEYSTORE_BASE64 }}
         run: |
+          set -euo pipefail
           test -n "$METROM_KEYSTORE_BASE64" || (echo "Missing METROM_KEYSTORE_BASE64" && exit 1)
           test -n "$METROM_KEYSTORE_PASSWORD" || (echo "Missing METROM_KEYSTORE_PASSWORD" && exit 1)
           test -n "$METROM_KEY_ALIAS" || (echo "Missing METROM_KEY_ALIAS" && exit 1)
           test -n "$METROM_KEY_PASSWORD" || (echo "Missing METROM_KEY_PASSWORD" && exit 1)
           printf '%s' "$METROM_KEYSTORE_BASE64" | base64 --decode > "$METROM_KEYSTORE_FILE"
-          keytool -list -keystore "$METROM_KEYSTORE_FILE" -storepass "$METROM_KEYSTORE_PASSWORD" -alias "$METROM_KEY_ALIAS" >/dev/null
+          ACTUAL_CERT=$(keytool -list -v -keystore "$METROM_KEYSTORE_FILE" -storepass "$METROM_KEYSTORE_PASSWORD" -alias "$METROM_KEY_ALIAS" | awk '/SHA256:/{print $2; exit}')
+          echo "Release certificate: $ACTUAL_CERT"
+          test "$ACTUAL_CERT" = "$METROM_EXPECTED_CERT_SHA256" || (echo "Release certificate does not match production assetlinks.json" && exit 1)
 
-      - name: Build signed AAB and APK
+      - name: Verify production Digital Asset Links
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 2 "$METROM_ASSETLINKS_URL" -o assetlinks-live.json
+          python3 - <<'PY'
+          import json, os, sys
+          with open('assetlinks-live.json', encoding='utf-8') as f:
+              data = json.load(f)
+          pkg = os.environ['METROM_PACKAGE']
+          sha = os.environ['METROM_EXPECTED_CERT_SHA256']
+          ok = False
+          for item in data if isinstance(data, list) else []:
+              target = item.get('target') or {}
+              rel = set(item.get('relation') or [])
+              certs = target.get('sha256_cert_fingerprints') or []
+              if (target.get('namespace') == 'android_app'
+                      and target.get('package_name') == pkg
+                      and sha in certs
+                      and 'delegate_permission/common.handle_all_urls' in rel):
+                  ok = True
+                  break
+          if not ok:
+              print('Production assetlinks.json does not contain the signed Metrom relationship.', file=sys.stderr)
+              sys.exit(1)
+          print('Production Digital Asset Links verified for Metrom.')
+          PY
+
+      - name: Build signed production AAB and APK
         run: |
           gradle --no-daemon --stacktrace --warning-mode all clean :app:lintRelease :app:bundleRelease :app:assembleRelease \
             -PMETROM_VERSION_CODE=${{ inputs.version_code }} \
             -PMETROM_VERSION_NAME=${{ inputs.version_name }}
 
-      - name: Verify signing and create release report
+      - name: Verify final APK signature and create release report
         run: |
+          set -euo pipefail
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk | tee signing-report.txt
+          APK_CERT=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs app/build/outputs/apk/release/app-release.apk | sed -n 's/^Signer #1 certificate SHA-256 digest: //p' | head -1 | tr '[:lower:]' '[:upper:]' | sed 's/../&:/g;s/:$//')
+          echo "APK certificate: $APK_CERT"
+          test "$APK_CERT" = "$METROM_EXPECTED_CERT_SHA256" || (echo "Final APK certificate mismatch" && exit 1)
           sha256sum app/build/outputs/apk/release/app-release.apk > release-sha256.txt
           sha256sum app/build/outputs/bundle/release/app-release.aab >> release-sha256.txt
+          printf 'Package: %s\nStart URL: %s\nExpected certificate: %s\n' \
+            "$METROM_PACKAGE" \
+            'https://msbmusic.ir/metrom/login.php?next=studio.php' \
+            "$METROM_EXPECTED_CERT_SHA256" > release-summary.txt
 
-      - name: Upload Play AAB
+      - name: Upload FINAL signed APK
         uses: actions/upload-artifact@v4
         with:
-          name: metrom-${{ inputs.version_name }}-aab
-          path: app/build/outputs/bundle/release/app-release.aab
-          if-no-files-found: error
-          retention-days: 30
-
-      - name: Upload signed APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: metrom-${{ inputs.version_name }}-apk
+          name: METROM-FINAL-${{ inputs.version_name }}-SIGNED-APK
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
 
-
-      - name: Upload release metadata
+      - name: Upload FINAL Play AAB
         uses: actions/upload-artifact@v4
         with:
-          name: metrom-${{ inputs.version_name }}-release-info
+          name: METROM-FINAL-${{ inputs.version_name }}-AAB
+          path: app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload final release metadata
+        uses: actions/upload-artifact@v4
+        with:
+          name: METROM-FINAL-${{ inputs.version_name }}-RELEASE-INFO
           path: |
             signing-report.txt
             release-sha256.txt
+            release-summary.txt
+            assetlinks-live.json
             app/build/outputs/mapping/release/mapping.txt
           if-no-files-found: warn
           retention-days: 30
