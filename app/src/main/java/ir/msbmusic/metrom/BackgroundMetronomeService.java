@@ -173,7 +173,7 @@ public final class BackgroundMetronomeService extends Service {
                 this, 2, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_stat_metronome)
+                .setSmallIcon(R.drawable.metrom_logo_monochrome)
                 .setContentTitle(getString(R.string.notification_title))
                 .setContentText(toPersianDigits(String.valueOf(bpm)) + " ضرب در دقیقه • " + toPersianDigits(timeSignature))
                 .setContentIntent(openPending)

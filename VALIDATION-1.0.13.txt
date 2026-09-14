@@ -1,0 +1,11 @@
+Metrom Android 1.0.13 validation
+- Offline UI uses WindowInsetsCompat systemBars + displayCutout insets.
+- Top and bottom safe-area paddings are additive to native content spacing.
+- No visible "مترونوم اضطراری" label remains in app/src/main resources/code.
+- Supplied Metrom logo is installed as metrom_site_icon and all legacy launcher mipmaps.
+- Adaptive launcher foreground and Android splash reference the supplied Metrom logo.
+- Android 13+ monochrome icon and foreground-service small icon use a monochrome derivative of the supplied waveform.
+- XML resource files parse successfully.
+- Default R.string references resolve.
+- Store defaults remain versionCode=1 and versionName=1.0.0.
+- Web/DB/network runtime logic unchanged.

@@ -11,7 +11,6 @@
     <string name="loading_metrom">در حال آماده سازی متروم…</string>
 
     <string name="offline_app_title">متروم استودیو بیت</string>
-    <string name="offline_emergency_title">مترونوم اضطراری</string>
     <string name="offline_tempo">سرعت ضرب</string>
     <string name="offline_bpm_unit">ضرب در دقیقه</string>
     <string name="offline_tap_tempo">تنظیم با ضربه</string>

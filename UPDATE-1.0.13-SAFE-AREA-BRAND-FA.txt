@@ -1,0 +1,18 @@
+Metrom Android — Source Revision 1.0.13
+
+تغییرات این Revision:
+- اصلاح کامل Safe Area حالت آفلاین برای Androidهای جدید و Edge-to-Edge.
+- عنوان و محتوای بالای صفحه دیگر زیر Status Bar/ساعت قرار نمی گیرد.
+- دکمه های پایین صفحه نیز بالاتر از Navigation Bar و دکمه های سیستمی قرار می گیرند.
+- عبارت «مترونوم اضطراری» از رابط آفلاین حذف شد.
+- لوگوی اصلی جدید ارائه شده توسط صاحب پروژه به عنوان Master Brand Asset جایگزین شد.
+- همان لوگوی اصلی برای Launcher Icon، Round Icon، Adaptive Icon، Splash و سطح خطای Native استفاده می شود.
+- آیکون Monochrome/Notification نیز از شکل موج همان لوگوی اصلی مشتق شده است.
+- موتور مترونوم، رفتار آنلاین TWA، Web 5.5.7، دیتابیس و سرور تغییری نکرده اند.
+- هیچ REST/AJAX، Polling، Query دیتابیس یا درخواست شبکه جدیدی اضافه نشده است.
+
+نسخه فروشگاهی پیش فرض همچنان:
+versionCode=1
+versionName=1.0.0
+
+1.0.13 فقط Source Revision است.

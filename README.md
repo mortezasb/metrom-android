@@ -1,12 +1,9 @@
-# Metrom Android 1.0.9 — Production Release
+# Metrom Android 1.0.13 source revision
 
-Production Android shell for Metrom.
+Online mode opens the unchanged production Metrom Studio in a verified TWA. Offline mode opens a Persian native emergency metronome with local AudioTrack streaming audio. No network/database/API work is performed by the offline metronome.
 
-- Final applicationId: `ir.msbmusic.metrom`
-- Start URL: `https://msbmusic.ir/metrom/login.php?next=studio.php`
-- Verified TWA only; no intentional normal-browser fallback.
-- AndroidX SplashScreen is kept on-screen until the trusted TWA is ready, preventing the intermediate white frame.
-- Launcher and splash artwork use the exact site icon source in `brand/metrom-icon-512.png`.
-- Release workflow verifies the expected signing certificate and the live Digital Asset Links file before building.
+This revision removes the secondary native/TWA loading surfaces from normal startup and closes the bridge Activity immediately when the user exits the TWA.
 
-Use **Android CI** for source validation only. Use **Build Signed Release** for distributable APK/AAB artifacts.
+Default store version remains versionCode 1 / versionName 1.0.0.
+
+1.0.13 adds system-bar safe-area handling for the offline UI and installs the supplied Metrom master logo across Android launcher/splash/native branding.

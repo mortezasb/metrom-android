@@ -1,19 +1,18 @@
-# Metrom Android 1.0.9 — Production Release
+# Metrom Android 1.0.13 — Source Revision
 
-این شاخه برای ساخت نسخه نهایی امضاشده Metrom است.
+این سورس برای ساخت نسخه اولیه فروشگاهی Metrom آماده شده است. شماره 1.0.13 فقط Revision سورس است؛ مقادیر انتشار پیش فرض همچنان `versionCode=1` و `versionName=1.0.0` هستند.
 
-## تفاوت Debug و Release
-- `Android CI` فقط صحت سورس را با APK دیباگ بررسی می‌کند. نسخه Debug برای انتشار نیست و به علت `applicationIdSuffix=.debug` و امضای Debug، TWA تولید را Verify نمی‌کند.
-- `Build Signed Release` خروجی واقعی انتشار را با package نهایی `ir.msbmusic.metrom` و کلید Release می‌سازد.
+## رفتار آنلاین
+اگر اینترنت معتبر موجود باشد، برنامه همان Metrom Studio اصلی را در Verified TWA باز می کند. URL سایت در حالت Verified TWA به کاربر نمایش داده نمی شود و Web 5.5.7 در این Revision تغییری نکرده است.
 
-## رفتار نهایی 1.0.7
-- شروع اپ: `https://msbmusic.ir/metrom/login.php?next=studio.php`
-- Splash اول همان برند اصلی Android است؛ بعد از آن به جای لوگوی تکراری، Loading واقعی Native نمایش داده می‌شود و Splash خود TWA نیز نشانگر Loading دارد.
-- آیکون و Splash اولیه از Artwork اصلی سایت `brand/metrom-icon-512.png` استفاده می‌کنند.
-- در اجرای آنلاین، قبل از نمایش محتوای وب رابطه `handle_all_urls` با Digital Asset Links بررسی می‌شود.
-- بعد از یک تایید موفق، اجرای آفلاین مجاز است تا Service Worker همان Studio کش شده را باز کند؛ اولین اجرای برنامه همچنان برای اعتماد امن و کش اولیه به اینترنت نیاز دارد.
-- اگر رابطه امن تایید نشود، Metrom یک صفحه Native داخلی با Retry نشان می‌دهد و عمدا URL سایت را در Browser/Custom Tab باز نمی‌کند.
-- Workflow انتشار SHA-256 کلید Release و `assetlinks.json` زنده سایت را قبل از Build بررسی می‌کند.
+## رفتار آفلاین
+اگر اینترنت در دسترس نباشد، صفحه Native مترونوم آفلاین باز می شود. مترونوم کاملا محلی است و BPM، تنظیم با ضربه، میزان های ۲/۴، ۳/۴، ۴/۴ و ۶/۸، کنترل صدا و پخش پس زمینه دارد. برای استودیو، تمرین ها، پروژه ها و امکانات آنلاین، برنامه از کاربر می خواهد اینترنت را فعال کند.
+
+## صدای Native در 1.0.12
+موتور مترونوم از AudioTrack Streaming استفاده می کند. هر Beat به صورت PCM داخل گوشی ساخته و روی خروجی Media پخش می شود. هیچ شبکه، دیتابیس، REST/AJAX، Polling یا WorkManager برای مترونوم آفلاین وجود ندارد.
+
+## شروع و خروج
+فقط Splash اصلی Android وجود دارد. صفحه سیاه Loading Native و Splash لودینگ دوم TWA از مسیر عادی حذف شده اند. بعد از خروج از TWA نیز Activity پشت آن بلافاصله بسته می شود تا کاربر روی صفحه سیاه Loading باقی نماند.
 
 ## ساخت نسخه نهایی
 GitHub > Actions > Build Signed Release > Run workflow
@@ -22,9 +21,5 @@ GitHub > Actions > Build Signed Release > Run workflow
 - version_code: `1`
 - version_name: `1.0.0`
 
-Artifactهای نهایی:
-- `METROM-FINAL-1.0.0-SIGNED-APK`
-- `METROM-FINAL-1.0.0-AAB`
-- `METROM-FINAL-1.0.0-RELEASE-INFO`
-
-APK امضاشده برای نصب مستقیم/مایکت است. AAB برای Google Play است.
+## تغییرات 1.0.13
+رابط آفلاین اکنون Safe Area واقعی Status Bar، بریدگی نمایشگر و Navigation Bar را با WindowInsetsCompat رعایت می کند؛ بنابراین محتوا زیر ساعت یا دکمه های سیستمی قرار نمی گیرد. عبارت «مترونوم اضطراری» از UI حذف شده است. لوگوی اصلی جدید پروژه نیز به عنوان منبع اصلی آیکون Launcher، Round/Adaptive Icon، Splash و سطوح Native جایگزین شده است.

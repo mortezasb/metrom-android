@@ -30,6 +30,10 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -81,6 +85,9 @@ public final class OfflineMetronomeActivity extends Activity {
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Android 15/16 enforce edge-to-edge for modern targets. Keep the dark canvas behind
+        // system bars, then apply the real status/navigation/cutout insets to our content.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         getWindow().setStatusBarColor(Color.rgb(9, 11, 17));
         getWindow().setNavigationBarColor(Color.rgb(9, 11, 17));
 
@@ -120,21 +127,35 @@ public final class OfflineMetronomeActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        root.setPadding(dp(20), dp(24), dp(20), dp(28));
+
+        final int baseLeft = dp(20);
+        final int baseTop = dp(18);
+        final int baseRight = dp(20);
+        final int baseBottom = dp(24);
+        root.setPadding(baseLeft, baseTop, baseRight, baseBottom);
+
+        // Respect status bar, display cutouts and the 3-button/gesture navigation area.
+        // This keeps the first title below the clock and the final button above system controls.
+        ViewCompat.setOnApplyWindowInsetsListener(scroll, (view, windowInsets) -> {
+            Insets bars = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            root.setPadding(
+                    baseLeft + bars.left,
+                    baseTop + bars.top,
+                    baseRight + bars.right,
+                    baseBottom + bars.bottom);
+            return windowInsets;
+        });
+
         scroll.addView(root, new ScrollView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        ViewCompat.requestApplyInsets(scroll);
 
         TextView title = label(getString(R.string.offline_app_title), 25, 0xFFFFFFFF, true);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = matchWrap();
-        titleParams.bottomMargin = dp(5);
+        titleParams.bottomMargin = dp(18);
         root.addView(title, titleParams);
-
-        TextView emergencyLabel = label(getString(R.string.offline_emergency_title), 13, 0xFFFF6B91, true);
-        emergencyLabel.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams emergencyParams = matchWrap();
-        emergencyParams.bottomMargin = dp(20);
-        root.addView(emergencyLabel, emergencyParams);
 
         LinearLayout tempoCard = card();
         tempoCard.setGravity(Gravity.CENTER_HORIZONTAL);
