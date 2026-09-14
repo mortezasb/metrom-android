@@ -1,0 +1,9 @@
+Metrom Android 1.0.12 validation
+
+- Android resource XML parse: PASS
+- Java R.string references against default strings.xml: PASS
+- Removed user-facing technical offline strings: PASS
+- Offline internet check uses ConnectivityManager only: PASS
+- No HTTP/API/database/polling code added: PASS
+- Store defaults unchanged: versionCode=1 / versionName=1.0.0
+- Web package unchanged: 5.5.7

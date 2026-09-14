@@ -63,7 +63,6 @@ public final class OfflineMetronomeActivity extends Activity {
 
     private TextView bpmValue;
     private TextView playButton;
-    private TextView connectionBadge;
     private TextView studioButton;
     private LinearLayout beatRow;
 
@@ -125,26 +124,17 @@ public final class OfflineMetronomeActivity extends Activity {
         scroll.addView(root, new ScrollView.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        connectionBadge = label("", 12, 0xFFFFFFFF, true);
-        connectionBadge.setGravity(Gravity.CENTER);
-        connectionBadge.setPadding(dp(14), dp(8), dp(14), dp(8));
-        LinearLayout.LayoutParams badgeParams = wrap();
-        badgeParams.gravity = Gravity.CENTER_HORIZONTAL;
-        badgeParams.bottomMargin = dp(18);
-        root.addView(connectionBadge, badgeParams);
-
-        TextView title = label(getString(R.string.offline_emergency_title), 25, 0xFFFFFFFF, true);
+        TextView title = label(getString(R.string.offline_app_title), 25, 0xFFFFFFFF, true);
         title.setGravity(Gravity.CENTER);
         LinearLayout.LayoutParams titleParams = matchWrap();
-        titleParams.bottomMargin = dp(8);
+        titleParams.bottomMargin = dp(5);
         root.addView(title, titleParams);
 
-        TextView subtitle = label(getString(R.string.offline_emergency_subtitle), 14, 0xFFB6BDCB, false);
-        subtitle.setGravity(Gravity.CENTER);
-        subtitle.setLineSpacing(0f, 1.22f);
-        LinearLayout.LayoutParams subtitleParams = matchWrap();
-        subtitleParams.bottomMargin = dp(22);
-        root.addView(subtitle, subtitleParams);
+        TextView emergencyLabel = label(getString(R.string.offline_emergency_title), 13, 0xFFFF6B91, true);
+        emergencyLabel.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams emergencyParams = matchWrap();
+        emergencyParams.bottomMargin = dp(20);
+        root.addView(emergencyLabel, emergencyParams);
 
         LinearLayout tempoCard = card();
         tempoCard.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -271,16 +261,17 @@ public final class OfflineMetronomeActivity extends Activity {
         infoBody.setLineSpacing(0f, 1.28f);
         infoCard.addView(infoBody, matchWrap());
 
+        TextView checkButton = actionButton(getString(R.string.offline_check_connection), false);
+        checkButton.setOnClickListener(v -> checkInternet());
+        LinearLayout.LayoutParams checkParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(52));
+        checkParams.bottomMargin = dp(10);
+        root.addView(checkButton, checkParams);
+
         studioButton = actionButton(getString(R.string.offline_open_studio), false);
         studioButton.setOnClickListener(v -> openStudioIfOnline());
         root.addView(studioButton, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
-
-        TextView footnote = label(getString(R.string.offline_local_note), 11, 0xFF707A8C, false);
-        footnote.setGravity(Gravity.CENTER);
-        LinearLayout.LayoutParams footParams = matchWrap();
-        footParams.topMargin = dp(14);
-        root.addView(footnote, footParams);
 
         setContentView(scroll);
     }
@@ -455,19 +446,16 @@ public final class OfflineMetronomeActivity extends Activity {
     }
 
     private void updateConnectionState() {
-        if (connectionBadge == null || studioButton == null) return;
-        boolean online = hasValidatedInternet();
-        connectionBadge.setText(online
-                ? R.string.offline_connection_restored
-                : R.string.offline_connection_badge);
-        connectionBadge.setBackground(rounded(
-                online ? 0xFF123225 : 0xFF2A2025,
-                online ? 0xFF2EA86B : 0xFF6E3948,
-                30,
-                1));
-        studioButton.setText(online
-                ? R.string.offline_open_studio
-                : R.string.offline_check_connection);
+        // Intentionally local-only: no HTTP probe or server request.
+        // ConnectivityManager reports Android's validated network state.
+    }
+
+    private void checkInternet() {
+        Toast.makeText(this,
+                hasValidatedInternet()
+                        ? R.string.offline_internet_available
+                        : R.string.offline_still_offline,
+                Toast.LENGTH_SHORT).show();
     }
 
     private void openStudioIfOnline() {
